@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "gportal"
+version = "0.1.0"
+description = "Client for G-Portal"
+authors = ["Takahiro Miyoshi <takahiro-miyoshi@sankichi.net>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "gportal"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
