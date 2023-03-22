@@ -8,9 +8,21 @@ readme = "README.md"
 packages = [{include = "gportal"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.8.1"
 
+[tool.poetry.group.dev.dependencies]
+black = "^23.1.0"
+isort = "^5.12.0"
+flake8 = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 119
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+line_length = 119
