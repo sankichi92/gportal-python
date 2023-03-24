@@ -17,22 +17,28 @@ class Search:
         end_time=None,
         count=100,
         params={},
+        timeout=None,
     ):
-        self._params = params
+        self.params = params
 
         if dataset_ids:
-            self._params["datasetId"] = ",".join(map(str, dataset_ids))
+            self.params["datasetId"] = ",".join(map(str, dataset_ids))
 
         if bbox:
-            self._params["bbox"] = ",".join(map(str, bbox))
+            self.params["bbox"] = ",".join(map(str, bbox))
 
         if start_time:
-            self._params["startTime"] = start_time
+            self.params["startTime"] = start_time
 
         if end_time:
-            self._params["endTime"] = end_time
+            self.params["endTime"] = end_time
 
-        self._params["count"] = count
+        self.params["count"] = count
+
+        if timeout is None:
+            self.timeout = gportal.search_timeout
+        else:
+            self.timeout = timeout
 
     def pages(self):
         """Returns a generator of search results with automatic pagination."""
@@ -43,14 +49,14 @@ class Search:
             page = http_client.get(
                 self.BASE_URL,
                 params={
-                    **self._params,
+                    **self.params,
                     "service": "CSW",
                     "version": "3.0.0",
                     "request": "GetRecords",
                     "outputFormat": "application/json",
                     "startIndex": start_index,
                 },
-                timeout=gportal.search_timeout,
+                timeout=self.timeout,
             )
             yield page
 

@@ -1,9 +1,9 @@
-from .search import Search  # noqa: F401
+from .search import Search
 
 search_timeout = 120
 
 
-def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}):
+def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=None):
     """Search products with the given parameters."""
 
     return Search(
@@ -13,4 +13,5 @@ def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100,
         end_time=end_time,
         count=count,
         params=params,
+        timeout=timeout,
     )
