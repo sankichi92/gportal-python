@@ -5,6 +5,26 @@ from gportal import Search
 
 class TestSearch:
     @responses.activate
+    def test_matched(self):
+        # Given
+        responses.get(
+            Search.BASE_URL,
+            json={
+                "properties": {
+                    "numberOfRecordsMatched": 150,
+                    "numberOfRecordsReturned": 100,
+                }
+            },
+        )
+
+        # When
+        search = Search()
+        matched = search.matched()
+
+        # Then
+        assert matched == 150
+
+    @responses.activate
     def test_pages(self):
         # Given
         response_json = {

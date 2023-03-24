@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import gportal
 
 from . import http_client
@@ -39,6 +41,13 @@ class Search:
             self.timeout = gportal.search_timeout
         else:
             self.timeout = timeout
+
+    @lru_cache(maxsize=1)
+    def matched(self):
+        """Returns the number of search results."""
+
+        page = next(self.pages())
+        return page["properties"]["numberOfRecordsMatched"]
 
     def pages(self):
         """Returns a generator of search results with automatic pagination."""
