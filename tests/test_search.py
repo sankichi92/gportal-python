@@ -1,6 +1,6 @@
 import responses
 
-from gportal import Search
+from gportal.search import Search
 
 
 class TestSearch:

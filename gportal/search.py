@@ -5,22 +5,26 @@ import gportal
 from . import http_client
 
 
+def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=None):
+    """Searches products with the given parameters."""
+
+    return Search(
+        dataset_ids=dataset_ids,
+        bbox=bbox,
+        start_time=start_time,
+        end_time=end_time,
+        count=count,
+        params=params,
+        timeout=timeout,
+    )
+
+
 class Search:
     """Represents a deferred query for G-Portal search."""
 
     BASE_URL = "https://gportal.jaxa.jp/csw/csw"
 
-    def __init__(
-        self,
-        *,
-        dataset_ids=[],
-        bbox=None,
-        start_time=None,
-        end_time=None,
-        count=100,
-        params={},
-        timeout=None,
-    ):
+    def __init__(self, dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=None):
         self.params = params
 
         if dataset_ids:
