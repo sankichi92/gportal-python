@@ -21,7 +21,7 @@ def datasets():
             if children:
                 datasets[title] = build_datasets(children, root=False)
             else:
-                datasets[title] = [int(dataset_id) for dataset_id in node["dataset"].split(",")]
+                datasets[title] = node["dataset"].split(",")
 
         return datasets
 

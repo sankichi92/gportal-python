@@ -25,6 +25,33 @@ class TestSearch:
         assert matched == 150
 
     @responses.activate
+    def test_products(self):
+        # Given
+        responses.get(
+            Search.BASE_URL,
+            match=[responses.matchers.query_param_matcher({"startIndex": 1}, strict_match=False)],
+            json={
+                "properties": {"numberOfRecordsMatched": 4, "numberOfRecordsReturned": 2},
+                "features": [{}, {}],
+            },
+        )
+        responses.get(
+            Search.BASE_URL,
+            match=[responses.matchers.query_param_matcher({"startIndex": 3}, strict_match=False)],
+            json={
+                "properties": {"numberOfRecordsMatched": 4, "numberOfRecordsReturned": 2},
+                "features": [{}, {}],
+            },
+        )
+
+        # When
+        search = Search()
+        products = search.products()
+
+        # Then
+        assert len(list(products)) == 4
+
+    @responses.activate
     def test_pages(self):
         # Given
         response_json = {

@@ -3,6 +3,7 @@ from functools import lru_cache
 import gportal
 
 from . import http_client
+from .product import Product
 
 
 def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=None):
@@ -52,6 +53,13 @@ class Search:
 
         page = next(self.pages())
         return page["properties"]["numberOfRecordsMatched"]
+
+    def products(self):
+        """Returns a generator of products."""
+
+        for page in self.pages():
+            for product_dict in page.get("features", []):
+                yield Product(product_dict)
 
     def pages(self):
         """Returns a generator of search results with automatic pagination."""
