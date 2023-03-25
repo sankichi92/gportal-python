@@ -1,12 +1,10 @@
 from functools import lru_cache
 
-import gportal
-
 from . import http_client
 from .product import Product
 
 
-def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=None):
+def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=120):
     """Searches products with the given parameters."""
 
     return Search(
@@ -25,7 +23,7 @@ class Search:
 
     BASE_URL = "https://gportal.jaxa.jp/csw/csw"
 
-    def __init__(self, dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=None):
+    def __init__(self, dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=120):
         self.params = params
 
         if dataset_ids:
@@ -41,11 +39,7 @@ class Search:
             self.params["endTime"] = end_time
 
         self.params["count"] = count
-
-        if timeout is None:
-            self.timeout = gportal.search_timeout
-        else:
-            self.timeout = timeout
+        self.timeout = timeout
 
     @lru_cache(maxsize=1)
     def matched(self):
