@@ -15,7 +15,7 @@ import os
 # Get the dictionary of the G-Portal dataset, which corresponds to the spacecraft / sensor search tree of Web UI.
 datasets = gportal.datasets()
 
-# Build the search query.
+# Build a search query.
 res = gportal.search(
     dataset_ids=datasets["GCOM-C/SGLI"]["LEVEL2"]["Land area"]["L2-LST"],
     start_time="2023-03-25T00:00:00",
@@ -29,10 +29,10 @@ res = gportal.search(
 
 print(f"Matched: {res.matched()}")
 
-# Get a generator of Product, which represents a search result (GeoJSON).
+# Get a generator of Product, which represents a search result GeoJSON.
 products = res.products()
 
-# Download the product files.
+# Download the product files via SFTP.
 with gportal.sftp(username="sankichi92", password=os.getenv("GPORTAL_PASSWORD")) as sftp:
     sftp.download(
         remote_paths=[product.data_path for product in products],
