@@ -1,10 +1,11 @@
 [tool.poetry]
 name = "gportal"
 version = "0.1.0"
-description = "Client for G-Portal"
+description = "CSW (Catalog Services for the Web) and SFTP client for JAXA G-Portal"
 authors = ["Takahiro Miyoshi <takahiro-miyoshi@sankichi.net>"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/sankichi92/gportal-python"
 packages = [{include = "gportal"}]
 
 [tool.poetry.dependencies]
