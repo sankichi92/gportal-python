@@ -1,13 +1,13 @@
 import responses
 
-from gportal.datasets import ENDPOINT, datasets
+from gportal.datasets import datasets
 
 
 @responses.activate
 def test_datasets():
     # Given
     responses.get(
-        ENDPOINT,
+        "https://gportal.jaxa.jp/gpr/search/service/satsensor.json",
         json=[
             {
                 "title": "GCOM-C/SGLI　<img src='/gpr/assets/img/icons_download.png'>",

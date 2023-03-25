@@ -8,7 +8,7 @@ class TestSearch:
     def test_matched(self):
         # Given
         responses.get(
-            Search.BASE_URL,
+            "https://gportal.jaxa.jp/csw/csw",
             json={
                 "properties": {
                     "numberOfRecordsMatched": 150,
@@ -28,7 +28,7 @@ class TestSearch:
     def test_products(self):
         # Given
         responses.get(
-            Search.BASE_URL,
+            "https://gportal.jaxa.jp/csw/csw",
             match=[responses.matchers.query_param_matcher({"startIndex": 1}, strict_match=False)],
             json={
                 "properties": {"numberOfRecordsMatched": 4, "numberOfRecordsReturned": 2},
@@ -36,7 +36,7 @@ class TestSearch:
             },
         )
         responses.get(
-            Search.BASE_URL,
+            "https://gportal.jaxa.jp/csw/csw",
             match=[responses.matchers.query_param_matcher({"startIndex": 3}, strict_match=False)],
             json={
                 "properties": {"numberOfRecordsMatched": 4, "numberOfRecordsReturned": 2},
@@ -61,12 +61,12 @@ class TestSearch:
             }
         }
         responses.get(
-            Search.BASE_URL,
+            "https://gportal.jaxa.jp/csw/csw",
             match=[responses.matchers.query_param_matcher({"startIndex": 1}, strict_match=False)],
             json=response_json,
         )
         responses.get(
-            Search.BASE_URL,
+            "https://gportal.jaxa.jp/csw/csw",
             match=[responses.matchers.query_param_matcher({"startIndex": 101}, strict_match=False)],
             json=response_json,
         )

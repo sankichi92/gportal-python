@@ -2,8 +2,6 @@ import re
 
 from . import http_client
 
-ENDPOINT = "https://gportal.jaxa.jp/gpr/search/service/satsensor.json"
-
 
 def datasets():
     """Gets and builds the dictionary of the dataset tree, where the leaves are the dataset IDs."""
@@ -25,5 +23,5 @@ def datasets():
 
         return datasets
 
-    raw_tree = http_client.get(ENDPOINT)
+    raw_tree = http_client.get("/gpr/search/service/satsensor.json")
     return build_datasets(raw_tree)

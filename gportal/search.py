@@ -21,8 +21,6 @@ def search(dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100,
 class Search:
     """Represents a deferred query for G-Portal search."""
 
-    BASE_URL = "https://gportal.jaxa.jp/csw/csw"
-
     def __init__(self, dataset_ids=[], bbox=None, start_time=None, end_time=None, count=100, params={}, timeout=120):
         self.params = params
 
@@ -62,7 +60,7 @@ class Search:
 
         while True:
             page = http_client.get(
-                self.BASE_URL,
+                "/csw/csw",
                 params={
                     **self.params,
                     "service": "CSW",

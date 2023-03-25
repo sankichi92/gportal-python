@@ -1,8 +1,6 @@
 class Product:
     """Represents a product record in search results."""
 
-    DOWNLOAD_BASE_URL = "https://gportal.jaxa.jp/download/"
-
     def __init__(self, geojson):
         self.geojson = geojson
 
@@ -36,7 +34,7 @@ class Product:
 
     @property
     def data_path(self):
-        return self.data_url.replace(self.DOWNLOAD_BASE_URL, "", 1)
+        return self.data_url.replace("https://gportal.jaxa.jp/download/", "", 1)
 
     @property
     def thumbnail_url(self):
