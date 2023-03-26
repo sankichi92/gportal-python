@@ -20,7 +20,7 @@ jobs:
         run: pipx install poetry
 
       - name: Install dependencies
-        run: poetry install --without dev,notebook
+        run: poetry install --without dev,notebook,docs
       
       - name: Build package
         run: poetry build

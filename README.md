@@ -23,8 +23,9 @@ res = gportal.search(
     end_time="2023-03-25T23:59:59",
     bbox=[130, 30, 140, 40],
     params={
-        # Additional parameters.
-        # See Appendix 7 of G-Portal User's Manual for more detail.
+        # You can add more parameters.
+        # See Appendix 7 of G-Portal User's Manual for more detail:
+        # https://gportal.jaxa.jp/gpr/assets/mng_upload/COMMON/upload/GPortalUserManual_en.pdf
     },
 )
 
