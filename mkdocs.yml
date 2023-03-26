@@ -1,0 +1,19 @@
+site_name: gportal-python
+
+repo_url: https://github.com/sankichi92/gportal-python
+
+theme:
+  name: material
+
+plugins:
+  - search
+  - mkdocstrings
+
+markdown_extensions:
+  # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#configuration
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.snippets
+  - pymdownx.superfences

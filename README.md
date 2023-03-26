@@ -12,7 +12,8 @@ Python CSW (Catalog Services for the Web) and SFTP client for [G-Portal](https:/
 import gportal
 import os
 
-# Get the dictionary of the G-Portal dataset, which corresponds to the spacecraft / sensor search tree of Web UI.
+# Get the dictionary of the G-Portal dataset.
+# The structure corresponds to the "spacecraft/sensor" search tree of the Web UI.
 datasets = gportal.datasets()
 
 # Build a search query.
@@ -27,7 +28,7 @@ res = gportal.search(
     },
 )
 
-print(f"Matched: {res.matched()}")
+print("Matched:", res.matched())
 
 # Get a generator of Product, which represents a search result GeoJSON.
 products = res.products()
@@ -40,9 +41,13 @@ with gportal.sftp(username="sankichi92", password=os.getenv("GPORTAL_PASSWORD"))
     )
 ```
 
+## Documentation
+
+https://gportal.readthedocs.io/
+
 ## Development
 
-This project uses [Poetry](https://python-poetry.org/) as a package manager.
+This project uses [Poetry](https://python-poetry.org/).
 
 ### Install dependencies
 
@@ -54,4 +59,4 @@ This project uses [Poetry](https://python-poetry.org/) as a package manager.
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License](https://mit-license.org/)
