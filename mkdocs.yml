@@ -5,12 +5,20 @@ site_author: Takahiro Miyoshi
 repo_url: https://github.com/sankichi92/gportal-python
 repo_name: sankichi92/gportal-python
 
+watch:
+  - gportal
+  - README.md
+
 nav:
   - index.md
   - Examples:
       - examples/search.ipynb
       - examples/sftp.ipynb
-  - api.md
+  - API Reference:
+      - datasets: api/datasets.md
+      - search: api/search.md
+      - product: api/product.md
+      - sftp: api/sftp.md
 
 theme:
   name: material
@@ -39,7 +47,18 @@ theme:
 
 plugins:
   - search
-  - mkdocstrings
+  - mkdocstrings:
+      handlers:
+        python:
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://docs.paramiko.org/en/3.1/objects.inv
+          options:
+            heading_level: 1
+            show_root_heading: true
+            show_root_toc_entry: false
+            group_by_category: false
+            members_order: source
   - mkdocs-jupyter
 
 markdown_extensions:

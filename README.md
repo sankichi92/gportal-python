@@ -35,7 +35,10 @@ print("Matched:", res.matched())
 products = res.products()
 
 # Download the product files via SFTP.
-with gportal.sftp(username="sankichi92", password=os.getenv("GPORTAL_PASSWORD")) as sftp:
+gportal.username = "sankichi92"
+gportal.password = os.getenv("GPORTAL_PASSWORD")
+
+with gportal.sftp() as sftp:
     sftp.download(
         remote_paths=[product.data_path for product in products],
         local_dir="path/to/download/dir",
@@ -57,6 +60,10 @@ This project uses [Poetry](https://python-poetry.org/).
 ### Run the test suite
 
     $ poetry run pytest
+
+### Start the docs server
+
+    $ poetry run mkdocs serve
 
 ## License
 

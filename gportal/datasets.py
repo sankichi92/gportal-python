@@ -1,10 +1,18 @@
 import re
+from typing import Any
 
 from . import http_client
 
 
-def datasets():
-    """Gets and builds the dictionary of the dataset tree, where the leaves are the dataset IDs."""
+def datasets() -> dict[str, Any]:
+    """Fetches the dataset tree from G-Portal.
+
+    The tree's structure corresponds to the "spacecraft/sensor" search tree of the Web UI.
+    This depends on an undocumented API of G-Portal, which is subject to change.
+
+    Returns:
+        The dictionary of the dataset tree, where the leaves are dataset IDs.
+    """
 
     def build_datasets(tree, root=True):
         datasets = {}

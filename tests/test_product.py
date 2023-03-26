@@ -46,10 +46,10 @@ class TestProduct:
         assert product.dataset_id == "12345678"
 
     def test_start_time(self, product):
-        assert product.start_time == "2023-03-25T00:00:00Z"
+        assert product.start_time.isoformat() == "2023-03-25T00:00:00+00:00"
 
     def test_end_time(self, product):
-        assert product.end_time == "2023-03-25T23:59:50Z"
+        assert product.end_time.isoformat() == "2023-03-25T23:59:50+00:00"
 
     def test_data_url(self, product):
         assert product.data_url == "https://gportal.jaxa.jp/download/path/to/GRANULE_ID.h5"
@@ -57,8 +57,8 @@ class TestProduct:
     def test_data_path(self, product):
         assert product.data_path == "path/to/GRANULE_ID.h5"
 
-    def test_thumbnail_url(self, product):
-        assert product.thumbnail_url == "https://gportal.jaxa.jp/gpr/img/thm/GRANULE_ID.png"
+    def test_get_browse_url(self, product):
+        assert product.get_browse_url() == "https://gportal.jaxa.jp/gpr/img/thm/GRANULE_ID.png"
 
     def test_flatten_properties(self, product):
         flat_properties = product.flatten_properties()
