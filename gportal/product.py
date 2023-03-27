@@ -21,7 +21,7 @@ class Product:
     @property
     def properties(self) -> dict[str, Any]:
         """GeoJSON properties."""
-        return self.geojson.get("geometry", {})
+        return self.geojson.get("properties", {})
 
     @property
     def id(self) -> Optional[str]:

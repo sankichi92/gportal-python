@@ -34,7 +34,6 @@ def search(
     Returns:
         A [Search][gportal.search.Search] instance that can be used to iterate through Products.
     """
-
     return Search(
         dataset_ids=dataset_ids,
         bbox=bbox,

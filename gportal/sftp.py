@@ -17,7 +17,6 @@ def sftp(username: Optional[str] = None, password: Optional[str] = None) -> "SFT
     Returns:
         An instance of [`SFTP`][gportal.sftp.SFTP].
     """
-
     username = username or gportal.username
     password = password or gportal.password
 
@@ -43,7 +42,7 @@ class SFTP:
     def __enter__(self):  # type: ignore
         return self
 
-    def __exit__(self, type, value, traceback):  # type: ignore
+    def __exit__(self, exc_type, exc_value, traceback):  # type: ignore
         self.close()
 
     @classmethod
