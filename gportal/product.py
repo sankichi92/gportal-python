@@ -13,6 +13,16 @@ class Product:
     def __init__(self, geojson: dict[str, Any]):
         self.geojson: dict[str, Any] = geojson
 
+    def __repr__(self) -> str:
+        if self.id is None:
+            return super().__repr__()
+        else:
+            return f"<Product id={self.id}>"
+
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        return self.geojson
+
     @property
     def geometry(self) -> dict[str, Any]:
         """GeoJSON geometry."""

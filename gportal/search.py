@@ -83,6 +83,9 @@ class Search:
         self._params["count"] = count
         self.timeout: Optional[float] = timeout
 
+    def __repr__(self) -> str:
+        return f"<Search params={self._params}>"
+
     @cache
     def matched(self) -> Optional[int]:
         """Gets the number of products matched the query.
