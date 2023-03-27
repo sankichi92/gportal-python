@@ -85,7 +85,7 @@ class Search:
         self.timeout: Optional[float] = timeout
 
     @cache
-    def matched(self) -> int:
+    def matched(self) -> Optional[int]:
         """Gets the number of products matched the query.
 
         This method is cached, so it is safe to call it multiple times.
@@ -94,7 +94,8 @@ class Search:
             The number of products matched the query.
         """
         page = next(self.pages())
-        return page["properties"]["numberOfRecordsMatched"]
+        properties: dict[str, int] = page.get("properties", {})
+        return properties.get("numberOfRecordsMatched")
 
     def products(self) -> Iterator[Product]:
         """Yields products matched the query.

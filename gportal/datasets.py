@@ -14,7 +14,7 @@ def datasets() -> dict[str, Any]:
         The dictionary of the dataset tree, where the leaves are dataset IDs.
     """
 
-    def build_datasets(tree, root=True):
+    def build_datasets(tree: list[dict[str, Any]], root: bool = True) -> dict[str, Any]:
         datasets = {}
 
         for node in tree:

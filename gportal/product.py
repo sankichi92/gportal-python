@@ -16,22 +16,23 @@ class Product:
     @property
     def geometry(self) -> dict[str, Any]:
         """GeoJSON geometry."""
-        return self.geojson["geometry"]
+        return self.geojson.get("geometry", {})
 
     @property
     def properties(self) -> dict[str, Any]:
         """GeoJSON properties."""
-        return self.geojson["properties"]
+        return self.geojson.get("geometry", {})
 
     @property
-    def id(self) -> str:
+    def id(self) -> Optional[str]:
         """Granule ID."""
-        return self.properties["identifier"]
+        return self.properties.get("identifier")
 
     @property
-    def dataset_id(self) -> str:
+    def dataset_id(self) -> Optional[str]:
         """Dataset ID belonging to."""
-        return self.properties.get("gpp", {}).get("datasetId")
+        gpp: dict[str, Any] = self.properties.get("gpp", {})
+        return gpp.get("datasetId")
 
     @property
     def start_time(self) -> datetime:
@@ -48,7 +49,8 @@ class Product:
     @property
     def data_url(self) -> Optional[str]:
         """URL of the product file."""
-        return self.properties.get("product", {}).get("fileName")
+        product: dict[str, Any] = self.properties.get("product", {})
+        return product.get("fileName")
 
     @property
     def data_path(self) -> Optional[str]:
@@ -68,10 +70,7 @@ class Product:
         if browse is None:
             return None
 
-        thumbnail = next((item for item in browse if item["type"].lower() == type.lower()), None)
-        if thumbnail is None:
-            return None
-
+        thumbnail: dict[str, str] = next((item for item in browse if item["type"].lower() == type.lower()), {})
         return thumbnail.get("fileName")
 
     def flatten_properties(self) -> dict[str, Any]:
@@ -107,7 +106,7 @@ class Product:
 
         return properties
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         return self.geojson
 
     def to_flat_properties_dict(self) -> dict[str, Any]:

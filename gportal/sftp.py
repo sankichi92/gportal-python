@@ -22,7 +22,7 @@ def sftp(username: Optional[str] = None, password: Optional[str] = None) -> "SFT
     password = password or gportal.password
 
     if username is None or password is None:
-        raise ValueError("username and password must be provided")
+        raise ValueError("username and password are required")
 
     return SFTP.connect(username, password)
 
@@ -40,10 +40,10 @@ class SFTP:
     def __init__(self, sftp_client: SFTPClient):
         self.client: SFTPClient = sftp_client
 
-    def __enter__(self):
+    def __enter__(self):  # type: ignore
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback):  # type: ignore
         self.close()
 
     @classmethod
@@ -60,12 +60,12 @@ class SFTP:
         transport = Transport((cls.HOST, cls.PORT))
         transport.connect(username=username, password=password)
         sftp_client = transport.open_sftp_client()
-        if sftp_client is None:
+        if sftp_client is None:  # will never happen
             raise RuntimeError("Failed to open SFTP session")
 
         return cls(sftp_client)
 
-    def close(self):
+    def close(self) -> None:
         """Closes the SFTP session."""
         self.client.close()
 
@@ -82,7 +82,7 @@ class SFTP:
         """
         return self.client.listdir(path)
 
-    def download(self, remote_paths: list[str], local_dir: str):
+    def download(self, remote_paths: list[str], local_dir: str) -> None:
         """Downloads files to a local directory.
 
         Args:

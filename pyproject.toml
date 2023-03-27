@@ -50,3 +50,8 @@ line_length = 120
 
 [tool.mypy]
 python_version = "3.9"
+strict = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+allow_untyped_defs = true
