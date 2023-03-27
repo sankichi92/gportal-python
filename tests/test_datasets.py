@@ -1,6 +1,6 @@
 import responses
 
-from gportal.datasets import datasets
+from gportal.datasets import cached_datasets, datasets
 
 
 @responses.activate
@@ -21,3 +21,11 @@ def test_datasets():
 
     # Then
     assert res["GCOM-C/SGLI"]["L1A-Visible & Near Infrared, VNR"] == ["10001000"]
+
+
+def test_cached_datasets():
+    # When
+    res = cached_datasets()
+
+    # Then
+    assert isinstance(res, dict)

@@ -21,10 +21,13 @@ jobs:
 
       - name: Install dependencies
         run: poetry install --without dev,notebook,docs
-      
+
+      - name: Check the datasets cache is up-to-date
+        run: python -c "import sys; from gportal.datasets import datasets,cached_datasets; print('OK') if datasets() == cached_datasets() else sys.exit(1)"
+
       - name: Build package
         run: poetry build
-      
+
       - name: Publish package
         run: poetry publish
         env:

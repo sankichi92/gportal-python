@@ -1,6 +1,8 @@
+__all__ = ["cached_datasets", "datasets", "search", "sftp"]
+
 import os
 
-from .datasets import datasets
+from .datasets import cached_datasets, datasets
 from .search import search
 from .sftp import sftp
 
