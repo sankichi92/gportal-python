@@ -1,5 +1,5 @@
 site_name: gportal-python
-site_description: Python CSW (Catalog Services for the Web) and SFTP client for JAXA G-Portal.
+site_description: Python client for JAXA G-Portal Catalogue Service and SFTP.
 site_author: Takahiro Miyoshi
 
 repo_url: https://github.com/sankichi92/gportal-python

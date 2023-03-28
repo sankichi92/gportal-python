@@ -18,9 +18,8 @@ def search(
 ) -> "Search":
     """Searches products on G-Portal with the given parameters.
 
-    A search is executed by calling G-Portal CSW (Catalog Service for the Web) API.
-    See G-Portal User's Manual Appendix 7 for more details of it:
-    https://gportal.jaxa.jp/gpr/assets/mng_upload/COMMON/upload/GPortalUserManual_en.pdf
+    Note that the return value is a [Search][gportal.search.Search] instance.
+    See its documentation for details on how to get the number of matches and iterate over results.
 
     Args:
         dataset_ids: List of dataset IDs.
@@ -32,7 +31,7 @@ def search(
         timeout: Timeout in seconds.
 
     Returns:
-        A [Search][gportal.search.Search] instance that can be used to iterate through Products.
+        A [Search][gportal.search.Search] instance that represents deferred query.
     """
     params = params.copy()
 
@@ -58,7 +57,10 @@ def search(
 
 
 class Search:
-    """Deferred query for G-Portal CSW (Catalog Service for the Web) API.
+    """Search query for G-Portal Catalogue Service API.
+
+    For API details, see G-Portal User's Manual Appendix 7:
+    https://gportal.jaxa.jp/gpr/assets/mng_upload/COMMON/upload/GPortalUserManual_en.pdf
 
     Attributes:
         params: Search parameters.

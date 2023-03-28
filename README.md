@@ -1,6 +1,6 @@
 # gportal-python
 
-Python CSW (Catalog Services for the Web) and SFTP client for [G-Portal](https://gportal.jaxa.jp/).
+Python client for [G-Portal](https://gportal.jaxa.jp/) Catalogue Service and SFTP.
 
 ## Installation
 
