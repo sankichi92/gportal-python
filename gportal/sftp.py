@@ -41,10 +41,10 @@ class SFTP:
     def __init__(self, sftp_client: SFTPClient):
         self.client: SFTPClient = sftp_client
 
-    def __enter__(self):  # type: ignore
+    def __enter__(self):  # type: ignore[no-untyped-def]
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):  # type: ignore
+    def __exit__(self, exc_type, exc_value, traceback):  # type: ignore[no-untyped-def]
         self.close()
 
     @classmethod

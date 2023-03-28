@@ -56,3 +56,4 @@ strict = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 allow_untyped_defs = true
+disable_error_code = ["call-overload"]

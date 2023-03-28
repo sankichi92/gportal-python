@@ -2,12 +2,14 @@ import json
 import re
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 from . import http_client
 
+Datasets = dict[str, Union["Datasets", list[str]]]
 
-def datasets() -> dict[str, Any]:
+
+def datasets() -> Datasets:
     """Fetches the dataset tree from G-Portal.
 
     The tree's structure corresponds to the "spacecraft/sensor" search tree of the Web UI.
@@ -43,7 +45,7 @@ def datasets() -> dict[str, Any]:
 
 
 @cache
-def cached_datasets() -> dict[str, Any]:
+def cached_datasets() -> Datasets:
     """Loads the dataset tree from the cache included in this package.
 
     Returns:
