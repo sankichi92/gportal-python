@@ -96,12 +96,12 @@ class SFTP:
         else:
             return entries
 
-    def download(self, target: Union[str, Product, Iterable[Union[str, Product]]], dir: str) -> None:
+    def download(self, target: Union[str, Product, Iterable[Union[str, Product]]], local_dir: str) -> None:
         """Downloads files to a local directory.
 
         Args:
             target: Remote path, Product object, or a list of them.
-            dir: Local directory to download to.
+            local_dir: Local directory to download to.
 
         Raises:
             ValueError: If the given product has no URL to download.
@@ -120,7 +120,7 @@ class SFTP:
 
                 target = target.data_path
 
-            self.client.get(target, os.path.join(dir, os.path.basename(target)))
+            self.client.get(target, os.path.join(local_dir, os.path.basename(target)))
 
     def _reset(self) -> None:
         self.client.chdir("/")

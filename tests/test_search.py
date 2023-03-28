@@ -1,6 +1,24 @@
+from datetime import datetime
+
 import responses
 
-from gportal.search import Search
+from gportal.search import Search, search
+
+
+def test_search():
+    # When
+    res = search(
+        dataset_ids=["1", "2"],
+        start_time=datetime(2023, 3, 28, 0, 0, 0),
+        end_time=datetime(2023, 3, 28, 23, 59, 59),
+        bbox=[130, 30, 140, 40],
+    )
+
+    # Then
+    assert res.params["datasetId"] == "1,2"
+    assert res.params["startTime"] == "2023-03-28T00:00:00"
+    assert res.params["endTime"] == "2023-03-28T23:59:59"
+    assert res.params["bbox"] == "130,30,140,40"
 
 
 class TestSearch:
@@ -18,8 +36,8 @@ class TestSearch:
         )
 
         # When
-        search = Search(params={})
-        matched = search.matched()
+        res = Search(params={})
+        matched = res.matched()
 
         # Then
         assert matched == 150
@@ -45,8 +63,8 @@ class TestSearch:
         )
 
         # When
-        search = Search(params={})
-        products = search.products()
+        res = Search(params={})
+        products = res.products()
 
         # Then
         assert len(list(products)) == 4
@@ -72,8 +90,8 @@ class TestSearch:
         )
 
         # When
-        search = Search(params={})
-        pages = search.pages()
+        res = Search(params={})
+        pages = res.pages()
 
         # Then
         assert next(pages) == response_json
