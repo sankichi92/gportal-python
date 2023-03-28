@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from functools import cache
 from typing import Any, Optional, Union
@@ -8,8 +8,8 @@ from .product import Product
 
 
 def search(
-    dataset_ids: list[str] = [],
-    bbox: Union[list[float], tuple[float, float, float, float], None] = None,
+    dataset_ids: Iterable[Union[str, int]] = [],
+    bbox: Optional[Sequence[float]] = None,
     start_time: Union[str, datetime, None] = None,
     end_time: Union[str, datetime, None] = None,
     count: int = 100,
@@ -34,57 +34,43 @@ def search(
     Returns:
         A [Search][gportal.search.Search] instance that can be used to iterate through Products.
     """
-    return Search(
-        dataset_ids=dataset_ids,
-        bbox=bbox,
-        start_time=start_time,
-        end_time=end_time,
-        count=count,
-        params=params,
-        timeout=timeout,
-    )
+    params = params.copy()
+
+    if dataset_ids:
+        params["datasetId"] = ",".join(map(str, dataset_ids))
+
+    if bbox:
+        params["bbox"] = ",".join(map(str, bbox))
+
+    if isinstance(start_time, datetime):
+        params["startTime"] = start_time.isoformat()
+    elif start_time:
+        params["startTime"] = start_time
+
+    if isinstance(end_time, datetime):
+        params["endTime"] = end_time.isoformat()
+    elif end_time:
+        params["endTime"] = end_time
+
+    params["count"] = count
+
+    return Search(params, timeout=timeout)
 
 
 class Search:
     """Deferred query for G-Portal CSW (Catalog Service for the Web) API.
 
     Attributes:
+        params: Search parameters.
         timeout: Timeout in seconds.
     """
 
-    def __init__(
-        self,
-        dataset_ids: list[str] = [],
-        bbox: Union[list[float], tuple[float, float, float, float], None] = None,
-        start_time: Union[str, datetime, None] = None,
-        end_time: Union[str, datetime, None] = None,
-        count: int = 100,
-        params: dict[str, Any] = {},
-        timeout: Optional[float] = 120,
-    ):
-        self._params = params
-
-        if dataset_ids:
-            self._params["datasetId"] = ",".join(map(str, dataset_ids))
-
-        if bbox:
-            self._params["bbox"] = ",".join(map(str, bbox))
-
-        if isinstance(start_time, datetime):
-            self._params["startTime"] = start_time.isoformat()
-        elif start_time:
-            self._params["startTime"] = start_time
-
-        if isinstance(end_time, datetime):
-            self._params["endTime"] = end_time.isoformat()
-        elif end_time:
-            self._params["endTime"] = end_time
-
-        self._params["count"] = count
+    def __init__(self, params: Mapping[str, Any], timeout: Optional[float] = None):
+        self.params: Mapping[str, Any] = params
         self.timeout: Optional[float] = timeout
 
     def __repr__(self) -> str:
-        return f"<Search params={self._params}>"
+        return f"<gportal.Search params={self.params}>"
 
     @cache
     def matched(self) -> Optional[int]:
@@ -121,7 +107,7 @@ class Search:
             page = http_client.get(
                 "/csw/csw",
                 params={
-                    **self._params,
+                    **self.params,
                     "service": "CSW",
                     "version": "3.0.0",
                     "request": "GetRecords",

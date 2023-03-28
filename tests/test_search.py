@@ -18,7 +18,7 @@ class TestSearch:
         )
 
         # When
-        search = Search()
+        search = Search(params={})
         matched = search.matched()
 
         # Then
@@ -45,7 +45,7 @@ class TestSearch:
         )
 
         # When
-        search = Search()
+        search = Search(params={})
         products = search.products()
 
         # Then
@@ -72,7 +72,7 @@ class TestSearch:
         )
 
         # When
-        search = Search()
+        search = Search(params={})
         pages = search.pages()
 
         # Then

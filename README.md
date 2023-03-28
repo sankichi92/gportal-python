@@ -10,10 +10,9 @@ Python CSW (Catalog Services for the Web) and SFTP client for [G-Portal](https:/
 
 ```python
 import gportal
-import os
 
 # Get the dictionary of the G-Portal dataset.
-# The structure corresponds to the "spacecraft/sensor" search tree of the Web UI.
+# It corresponds to the "spacecraft/sensor" search tree of the Web UI.
 datasets = gportal.datasets()
 
 # Build a search query.
@@ -24,25 +23,21 @@ res = gportal.search(
     bbox=[130, 30, 140, 40],
     params={
         # You can add more parameters.
-        # See Appendix 7 of G-Portal User's Manual for more detail:
+        # See Appendix 7 of G-Portal User's Manual for details:
         # https://gportal.jaxa.jp/gpr/assets/mng_upload/COMMON/upload/GPortalUserManual_en.pdf
     },
 )
 
 print("Matched:", res.matched())
 
-# Get a generator of Product, which represents a search result GeoJSON.
+# Get the iterable of the search result products.
+# Product object wraps GeoJSON Feature.
 products = res.products()
 
 # Download the product files via SFTP.
-gportal.username = "sankichi92"
-gportal.password = os.getenv("GPORTAL_PASSWORD")
-
-with gportal.sftp() as sftp:
-    sftp.download(
-        remote_paths=[product.data_path for product in products],
-        local_dir="path/to/download/dir",
-    )
+gportal.username = "sankichi92"  
+gportal.password = "**********"  # If env var GPORTAL_PASSWORD is set, the value is used.
+gportal.download(products, dir="path/to/download/dir")
 ```
 
 ## Documentation

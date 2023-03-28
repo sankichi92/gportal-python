@@ -1,11 +1,10 @@
-__all__ = ["cached_datasets", "datasets", "search", "sftp"]
+__all__ = ["cached_datasets", "datasets", "search", "SFTP", "download"]
 
 import os
 
-from .datasets import cached_datasets, datasets
+from .dataset import cached_datasets, datasets
 from .search import search
-from .sftp import sftp
+from .sftp import SFTP, download
 
-# Configuration variables
 username = os.getenv("GPORTAL_USERNAME", None)
 password = os.getenv("GPORTAL_PASSWORD", None)

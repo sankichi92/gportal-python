@@ -15,7 +15,7 @@ nav:
       - examples/search.ipynb
       - examples/sftp.ipynb
   - API Reference:
-      - datasets: api/datasets.md
+      - dataset: api/dataset.md
       - search: api/search.md
       - product: api/product.md
       - sftp: api/sftp.md

@@ -1,6 +1,6 @@
 import responses
 
-from gportal.datasets import cached_datasets, datasets
+from gportal.dataset import cached_datasets, datasets
 
 
 @responses.activate

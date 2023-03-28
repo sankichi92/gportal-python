@@ -1,29 +1,31 @@
 import os.path
-from typing import Optional
+from collections.abc import Iterable
+from typing import Optional, Union
 
 from paramiko.sftp_client import SFTPClient
 from paramiko.transport import Transport
 
 import gportal
 
+from .product import Product
 
-def sftp(username: Optional[str] = None, password: Optional[str] = None) -> "SFTP":
-    """Opens an SFTP session with G-Portal.
+
+def download(
+    target: Union[str, Product, Iterable[Union[str, Product]]],
+    dir: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> None:
+    """Downloads files to a local directory via SFTP.
 
     Args:
+        target: Remote path, Product object, or a list of them.
+        dir: Local directory to download to.
         username: G-Portal username. If not provided, the value of `gportal.username` is used.
         password: G-Portal password. If not provided, the value of `gportal.password` is used.
-
-    Returns:
-        An instance of [`SFTP`][gportal.sftp.SFTP].
     """
-    username = username or gportal.username
-    password = password or gportal.password
-
-    if username is None or password is None:
-        raise ValueError("username and password are required")
-
-    return SFTP.connect(username, password)
+    with SFTP.connect(username, password) as sftp:
+        sftp.download(target, dir)
 
 
 class SFTP:
@@ -46,18 +48,25 @@ class SFTP:
         self.close()
 
     @classmethod
-    def connect(cls, username: str, password: str) -> "SFTP":
+    def connect(cls, username: Optional[str] = None, password: Optional[str] = None) -> "SFTP":
         """Opens an SFTP session with G-Portal.
 
         Args:
-            username: G-Portal username.
-            password: G-Portal password.
+            username: G-Portal username. If not provided, the value of `gportal.username` is used.
+            password: G-Portal password. If not provided, the value of `gportal.password` is used.
 
         Returns:
             An instance of [`SFTP`][gportal.sftp.SFTP].
         """
+        username = username or gportal.username
+        password = password or gportal.password
+
+        if username is None or password is None:
+            raise ValueError("username and password are required")
+
         transport = Transport((cls.HOST, cls.PORT))
         transport.connect(username=username, password=password)
+
         sftp_client = transport.open_sftp_client()
         if sftp_client is None:  # will never happen
             raise RuntimeError("Failed to open SFTP session")
@@ -68,25 +77,50 @@ class SFTP:
         """Closes the SFTP session."""
         self.client.close()
 
-    def listdir(self, path: str) -> list[str]:
-        """Returns a list of entries in the given directory.
+    def listdir(self, path: str = "/", /, fullpath: bool = False) -> list[str]:
+        """Returns a list containing the names of the entries in the given path.
 
         Wraps [`paramiko.SFTPClient.listdir`][paramiko.sftp_client.SFTPClient.listdir].
 
         Args:
             path: Remote path to list.
+            fullpath: If `True`, the returned list contains full paths of the entries.
 
         Returns:
-            A list of entries.
+            A list containing the names of the entries.
         """
-        return self.client.listdir(path)
+        self._reset()
+        entries = self.client.listdir(path)
+        if fullpath:
+            return [os.path.join(path, entry) for entry in entries]
+        else:
+            return entries
 
-    def download(self, remote_paths: list[str], local_dir: str) -> None:
+    def download(self, target: Union[str, Product, Iterable[Union[str, Product]]], dir: str) -> None:
         """Downloads files to a local directory.
 
         Args:
-            remote_paths: List of remote paths to download.
-            local_dir: Local directory to download to.
+            target: Remote path, Product object, or a list of them.
+            dir: Local directory to download to.
+
+        Raises:
+            ValueError: If the given product has no URL to download.
         """
-        for remote_path in list(remote_paths):
-            self.client.get(remote_path, os.path.join(local_dir, os.path.basename(remote_path)))
+        self._reset()
+
+        if isinstance(target, Iterable):
+            targets = target
+        else:
+            targets = [target]
+
+        for target in targets:
+            if isinstance(target, Product):
+                if target.data_path is None:
+                    raise ValueError(f"Product {target.id} has no URL to download")
+
+                target = target.data_path
+
+            self.client.get(target, os.path.join(dir, os.path.basename(target)))
+
+    def _reset(self) -> None:
+        self.client.chdir("/")

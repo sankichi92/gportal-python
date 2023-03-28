@@ -11,10 +11,11 @@ def datasets() -> dict[str, Any]:
     """Fetches the dataset tree from G-Portal.
 
     The tree's structure corresponds to the "spacecraft/sensor" search tree of the Web UI.
+    The leaves are dataset IDs.
 
     Note:
         This depends on an undocumented API of G-Portal, which is subject to change.
-        If an error raised, consider using [`cached_datasets()`](gportal.datasets.cached_datasets) instead.
+        If this function is broken, use [`cached_datasets()`][gportal.dataset.cached_datasets] instead.
 
     Returns:
         The dictionary of the dataset tree, where the leaves are dataset IDs.
@@ -43,7 +44,7 @@ def datasets() -> dict[str, Any]:
 
 @cache
 def cached_datasets() -> dict[str, Any]:
-    """Loads the dataset tree from the cache.
+    """Loads the dataset tree from the cache included in this package.
 
     Returns:
         The dictionary of the dataset tree, where the leaves are dataset IDs.

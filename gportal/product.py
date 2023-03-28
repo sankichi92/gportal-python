@@ -17,7 +17,7 @@ class Product:
         if self.id is None:
             return super().__repr__()
         else:
-            return f"<Product id={self.id}>"
+            return f"<gportal.Product id={self.id}>"
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:
