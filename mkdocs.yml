@@ -12,8 +12,7 @@ watch:
 nav:
   - index.md
   - Examples:
-      - examples/search.ipynb
-      - examples/sftp.ipynb
+      - examples/basic.ipynb
   - API Reference:
       - dataset: api/dataset.md
       - search: api/search.md
