@@ -12,7 +12,7 @@ from .product import Product
 
 def download(
     target: Union[str, Product, Iterable[Union[str, Product]]],
-    dir: str,
+    local_dir: str = ".",
     username: Optional[str] = None,
     password: Optional[str] = None,
 ) -> None:
@@ -20,12 +20,12 @@ def download(
 
     Args:
         target: Remote path, Product object, or a list of them.
-        dir: Local directory to download to.
+        local_dir: Local directory to download to.
         username: G-Portal username. If not provided, the value of `gportal.username` is used.
         password: G-Portal password. If not provided, the value of `gportal.password` is used.
     """
     with SFTP.connect(username, password) as sftp:
-        sftp.download(target, dir)
+        sftp.download(target, local_dir)
 
 
 class SFTP:

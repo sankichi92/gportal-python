@@ -37,7 +37,7 @@ products = res.products()
 # Download the product files via SFTP.
 gportal.username = "sankichi92"  
 gportal.password = "**********"  # If env var GPORTAL_PASSWORD is set, the value is used.
-gportal.download(products, dir="path/to/download/dir")
+gportal.download(products, local_dir="path/to/download/dir")
 ```
 
 ## Documentation
