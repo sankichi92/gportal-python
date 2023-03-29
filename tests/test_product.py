@@ -22,8 +22,8 @@ class TestProduct:
                     },
                     "browse": [
                         {
-                            "type": "THUMBNAIL",
-                            "fileName": "https://gportal.jaxa.jp/gpr/img/thm/GRANULE_ID.png",
+                            "type": "QUICKLOOK",
+                            "fileName": "https://gportal.jaxa.jp/gpr/img/br/GRANULE_ID.png",
                         }
                     ],
                     "gpp": {
@@ -58,7 +58,7 @@ class TestProduct:
         assert product.data_path == "path/to/GRANULE_ID.h5"
 
     def test_get_browse_url(self, product):
-        assert product.get_browse_url() == "https://gportal.jaxa.jp/gpr/img/thm/GRANULE_ID.png"
+        assert product.get_browse_url() == "https://gportal.jaxa.jp/gpr/img/br/GRANULE_ID.png"
 
     def test_flatten_properties(self, product):
         flat_properties = product.flatten_properties()
@@ -68,6 +68,6 @@ class TestProduct:
             "beginPosition": "2023-03-25T00:00:00Z",
             "endPosition": "2023-03-25T23:59:50Z",
             "productFileName": "https://gportal.jaxa.jp/download/path/to/GRANULE_ID.h5",
-            "thumbnail": "https://gportal.jaxa.jp/gpr/img/thm/GRANULE_ID.png",
+            "browse-br": "https://gportal.jaxa.jp/gpr/img/br/GRANULE_ID.png",
             "datasetId": "12345678",
         }

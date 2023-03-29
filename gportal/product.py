@@ -68,18 +68,27 @@ class Product:
 
         return self.data_url.replace("https://gportal.jaxa.jp/download/", "", 1)
 
-    def get_browse_url(self, type: str = "thumbnail") -> Optional[str]:
-        """URL of the thumbnail file.
+    def get_browse_url(self, type: str = "browse") -> Optional[str]:
+        """URL of the browse image.
 
         Args:
-            type: Type of the browse file. Basically, "thumbnail" or "quicklook".
+            type: Type of the image. Basically, "browse", "sub-browse" or "thumbnail".
         """
-        browse = self.properties.get("browse")
-        if browse is None:
+        items = self.properties.get("browse")
+        if items is None:
             return None
 
-        thumbnail: dict[str, str] = next((item for item in browse if item["type"].lower() == type.lower()), {})
-        return thumbnail.get("fileName")
+        type = {
+            "thumbnail": "thm",
+            "browse": "br",
+            "sub-browse": "sb",
+        }.get(type, type)
+
+        for item in items:
+            if f"/img/{type}" in item["fileName"]:
+                return item["fileName"]
+
+        return None
 
     def flatten_properties(self) -> dict[str, Any]:
         """Flattens the nested properties.
@@ -87,7 +96,7 @@ class Product:
         This method processes nested properties from the following keys:
 
         - `product`: Each key is prefixed with `product` (e.g. `product.fileName` => `productFileName`).
-        - `browse`: Keys are the `type` value, and their values are `fileName`.
+        - `browse`: Keys are the image type (e.g. browse-br, browse-thm), and their values are `fileName`.
         - `gpp`: Keys and values are directly merged.
 
         Returns:
@@ -103,8 +112,9 @@ class Product:
 
         if "browse" in properties and isinstance(properties["browse"], list):
             for browse in properties["browse"]:
-                if "type" in browse and "fileName" in browse:
-                    properties[browse["type"].lower()] = browse["fileName"]
+                match = re.search(r"\/img\/([\w]+)\/", browse.get("fileName", ""))
+                if match:
+                    properties[f"browse-{match.group(1)}"] = browse["fileName"]
 
             del properties["browse"]
 
