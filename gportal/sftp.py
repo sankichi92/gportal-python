@@ -83,13 +83,13 @@ class SFTP:
         Wraps [`paramiko.SFTPClient.listdir`][paramiko.sftp_client.SFTPClient.listdir].
 
         Args:
-            path: Remote path to list.
+            path: Remote path to list. It must be absolute.
             fullpath: If `True`, the returned list contains full paths of the entries.
 
         Returns:
             A list containing the names of the entries.
         """
-        self._reset()
+        self._reset_cwd()
         entries = self.client.listdir(path)
         if fullpath:
             return [os.path.join(path, entry) for entry in entries]
@@ -106,7 +106,7 @@ class SFTP:
         Raises:
             ValueError: If the given product has no URL to download.
         """
-        self._reset()
+        self._reset_cwd()
 
         if isinstance(target, Iterable):
             targets = target
@@ -122,5 +122,5 @@ class SFTP:
 
             self.client.get(target, os.path.join(local_dir, os.path.basename(target)))
 
-    def _reset(self) -> None:
-        self.client.chdir("/")
+    def _reset_cwd(self) -> None:
+        self.client.chdir()
