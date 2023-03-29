@@ -18,7 +18,7 @@ def search(
 ) -> "Search":
     """Searches products on G-Portal with the given parameters.
 
-    Note that the return value is a [Search][gportal.search.Search] instance.
+    Note that the return value is a [`Search`][gportal.search.Search] instance.
     See its documentation for details on how to get the number of matches and iterate over results.
 
     Args:
