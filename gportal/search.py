@@ -83,9 +83,8 @@ class Search:
         Returns:
             The number of products matched the query.
         """
-        page = next(self.pages())
-        properties: dict[str, int] = page.get("properties", {})
-        return properties.get("numberOfRecordsMatched")
+        response = self._request({"count": 0})
+        return response.get("properties", {}).get("numberOfRecordsMatched")
 
     def products(self) -> Iterator[Product]:
         """Yields products matched the query.
@@ -106,18 +105,7 @@ class Search:
         start_index = 1
 
         while True:
-            page = http_client.get(
-                "/csw/csw",
-                params={
-                    **self.params,
-                    "service": "CSW",
-                    "version": "3.0.0",
-                    "request": "GetRecords",
-                    "outputFormat": "application/json",
-                    "startIndex": start_index,
-                },
-                timeout=self.timeout,
-            )
+            page = self._request({"startIndex": start_index})
             yield page
 
             properties = page["properties"]
@@ -125,3 +113,17 @@ class Search:
 
             if start_index > properties["numberOfRecordsMatched"]:
                 break
+
+    def _request(self, extra_params: dict[str, Any]) -> dict[str, Any]:
+        return http_client.get(
+            "/csw/csw",
+            params={
+                **self.params,
+                "service": "CSW",
+                "version": "3.0.0",
+                "request": "GetRecords",
+                "outputFormat": "application/json",
+                **extra_params,
+            },
+            timeout=self.timeout,
+        )

@@ -41,8 +41,7 @@ class Product:
     @property
     def dataset_id(self) -> Optional[str]:
         """Dataset ID belonging to."""
-        gpp: dict[str, Any] = self.properties.get("gpp", {})
-        return gpp.get("datasetId")
+        return self.properties.get("gpp", {}).get("datasetId")
 
     @property
     def start_time(self) -> datetime:
@@ -59,8 +58,7 @@ class Product:
     @property
     def data_url(self) -> Optional[str]:
         """URL of the product file."""
-        product: dict[str, Any] = self.properties.get("product", {})
-        return product.get("fileName")
+        return self.properties.get("product", {}).get("fileName")
 
     @property
     def data_path(self) -> Optional[str]:

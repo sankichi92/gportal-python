@@ -52,6 +52,7 @@ line_length = 120
 [tool.mypy]
 python_version = "3.9"
 strict = true
+warn_return_any = false
 
 [[tool.mypy.overrides]]
 module = "tests.*"

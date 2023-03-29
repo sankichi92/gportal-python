@@ -27,6 +27,7 @@ class TestSearch:
         # Given
         responses.get(
             "https://gportal.jaxa.jp/csw/csw",
+            match=[responses.matchers.query_param_matcher({"count": 0}, strict_match=False)],
             json={
                 "properties": {
                     "numberOfRecordsMatched": 150,
