@@ -1,4 +1,5 @@
 import os.path
+import re
 from collections.abc import Iterable
 from typing import Optional, Union
 
@@ -77,13 +78,14 @@ class SFTP:
         """Closes the SFTP session."""
         self.client.close()
 
-    def listdir(self, path: str = "/", /, fullpath: bool = False) -> list[str]:
+    def listdir(self, path: str = "/", /, filter_pattern: Optional[str] = None, fullpath: bool = False) -> list[str]:
         """Returns a list containing the names of the entries in the given path.
 
         Wraps [`paramiko.SFTPClient.listdir`][paramiko.sftp_client.SFTPClient.listdir].
 
         Args:
             path: Remote path to list. It must be absolute.
+            filter_pattern: Regular expression to filter the entries.
             fullpath: If `True`, the returned list contains full paths of the entries.
 
         Returns:
@@ -91,6 +93,10 @@ class SFTP:
         """
         self._reset_cwd()
         entries = self.client.listdir(path)
+
+        if filter_pattern:
+            entries = [entry for entry in entries if re.search(filter_pattern, entry)]
+
         if fullpath:
             return [os.path.join(path, entry) for entry in entries]
         else:

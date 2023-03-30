@@ -32,6 +32,16 @@ class TestSFTP:
         paramiko_client.listdir.assert_called_once_with("/dir")
         assert entries == ["file1.h5", "file2.h5"]
 
+    def test_listdir_filter_pattern(self, sftp, paramiko_client):
+        # Given
+        paramiko_client.listdir.return_value = ["file1.h5", "file2.h5"]
+
+        # When
+        entries = sftp.listdir("/dir", filter_pattern=r"1\.h5")
+
+        # Then
+        assert entries == ["file1.h5"]
+
     def test_listdir_fullpath(self, sftp, paramiko_client):
         # Given
         paramiko_client.listdir.return_value = ["file1.h5", "file2.h5"]
