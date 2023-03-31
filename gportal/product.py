@@ -6,6 +6,8 @@ from typing import Any, Optional
 class Product:
     """Wrapper of a product GeoJSON in search results.
 
+    You can access the `properties` or `properties.gpp` values by `[]` operator like a dictionary.
+
     Attributes:
         geojson: Original dictionary that represents GeoJSON Feature.
     """
@@ -13,15 +15,15 @@ class Product:
     def __init__(self, geojson: dict[str, Any]):
         self.geojson: dict[str, Any] = geojson
 
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        return self.geojson
+
     def __repr__(self) -> str:
         if self.id is None:
             return super().__repr__()
         else:
             return f"<gportal.Product id={self.id}>"
-
-    @property
-    def __geo_interface__(self) -> dict[str, Any]:
-        return self.geojson
 
     @property
     def geometry(self) -> dict[str, Any]:
@@ -33,32 +35,47 @@ class Product:
         """GeoJSON properties."""
         return self.geojson.get("properties", {})
 
+    def __getitem__(self, key: str) -> Any:
+        if key in self.properties:
+            return self.properties[key]
+
+        if key in self.properties.get("gpp", {}):
+            return self.properties["gpp"][key]
+
+        raise KeyError(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
     @property
     def id(self) -> Optional[str]:
         """Granule ID."""
-        return self.properties.get("identifier")
+        return self.get("identifier")
 
     @property
     def dataset_id(self) -> Optional[str]:
         """Dataset ID belonging to."""
-        return self.properties.get("gpp", {}).get("datasetId")
+        return self.get("datasetId")
 
     @property
     def start_time(self) -> datetime:
         """Observation start time."""
-        isoformat = re.sub(r"Z$", "+00:00", self.properties["beginPosition"])  # For Python 3.10 or former
+        isoformat = re.sub(r"Z$", "+00:00", self["beginPosition"])  # For Python 3.10 or former
         return datetime.fromisoformat(isoformat)
 
     @property
     def end_time(self) -> datetime:
         """Observation end time."""
-        isoformat = re.sub(r"Z$", "+00:00", self.properties["endPosition"])  # For Python 3.10 or former
+        isoformat = re.sub(r"Z$", "+00:00", self["endPosition"])  # For Python 3.10 or former
         return datetime.fromisoformat(isoformat)
 
     @property
     def data_url(self) -> Optional[str]:
         """URL of the product file."""
-        return self.properties.get("product", {}).get("fileName")
+        return self.get("product", {}).get("fileName")
 
     @property
     def data_path(self) -> Optional[str]:
@@ -74,7 +91,7 @@ class Product:
         Args:
             type: Type of the image. Basically, "browse", "sub-browse" or "thumbnail".
         """
-        items = self.properties.get("browse")
+        items = self.get("browse")
         if items is None:
             return None
 
@@ -123,9 +140,6 @@ class Product:
             del properties["gpp"]
 
         return properties
-
-    def to_dict(self) -> dict[str, Any]:
-        return self.geojson
 
     def to_flat_properties_dict(self) -> dict[str, Any]:
         """Converts to a dictionary of GeoJSON Feature with flattened properties.
