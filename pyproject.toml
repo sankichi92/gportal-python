@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gportal"
-version = "0.1.0"
+version = "0.2.0"
 description = "Client for JAXA G-Portal Catalogue Service and SFTP"
 authors = ["Takahiro Miyoshi <takahiro-miyoshi@sankichi.net>"]
 license = "MIT"
