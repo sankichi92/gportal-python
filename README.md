@@ -61,3 +61,9 @@ This project uses [Poetry](https://python-poetry.org/).
 ### Start the docs server
 
     $ poetry run mkdocs serve
+
+### Release a new version
+
+1. Bump the version in `pyproject.toml` by [`poetry version`](https://python-poetry.org/docs/cli/#version) and commit it.
+2. Create a git tag for the new version.
+3. Push it to GitHub, and then the `publish-package` workflow starts.
