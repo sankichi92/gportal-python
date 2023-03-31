@@ -1,6 +1,9 @@
 # gportal-python
 
-Python client for [G-Portal](https://gportal.jaxa.jp/) Catalogue Service and SFTP.
+Unofficial python client for [G-Portal](https://gportal.jaxa.jp/) Catalogue Service and SFTP.
+
+This package is distributed under the [MIT License](https://mit-license.org/), but the data that can be retrieved through this package is provided under [G-Portal Terms of Use](https://gportal.jaxa.jp/gpr/index/eula).
+Please make sure to review them before using the G-Portal data.
 
 ## Installation
 
@@ -23,15 +26,14 @@ res = gportal.search(
     bbox=[130, 30, 140, 40],
     params={
         # You can add more parameters.
-        # See Appendix 7 of G-Portal User's Manual for details:
+        # See Appendix 7 of G-Portal User's Manual for more details:
         # https://gportal.jaxa.jp/gpr/assets/mng_upload/COMMON/upload/GPortalUserManual_en.pdf
     },
 )
 
 print("Matched:", res.matched())
 
-# Get the iterable of the search result products.
-# Product object wraps GeoJSON Feature.
+# Get the resulting products.
 products = res.products()
 
 # Download the product files via SFTP.
@@ -59,7 +61,3 @@ This project uses [Poetry](https://python-poetry.org/).
 ### Start the docs server
 
     $ poetry run mkdocs serve
-
-## License
-
-[MIT License](https://mit-license.org/)
