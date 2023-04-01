@@ -13,6 +13,7 @@ nav:
   - index.md
   - Examples:
       - examples/basic.ipynb
+      - examples/geopandas.ipynb
   - API Reference:
       - dataset: api/dataset.md
       - search: api/search.md
