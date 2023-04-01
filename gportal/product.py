@@ -9,7 +9,7 @@ class Product:
     You can access the `properties` or `properties.gpp` values by `[]` operator like a dictionary.
 
     Attributes:
-        geojson: Original dictionary that represents GeoJSON Feature.
+        geojson: Original dictionary that represents a GeoJSON Feature.
     """
 
     def __init__(self, geojson: dict[str, Any]):
@@ -17,6 +17,10 @@ class Product:
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:
+        """Same as `geojson` attribute.
+
+        https://gist.github.com/sgillies/2217756
+        """
         return self.geojson
 
     def __repr__(self) -> str:
@@ -90,6 +94,9 @@ class Product:
 
         Args:
             type: Type of the image. Basically, "browse", "sub-browse" or "thumbnail".
+
+        Returns:
+            The URL of the browse image.
         """
         items = self.get("browse")
         if items is None:
@@ -141,13 +148,20 @@ class Product:
 
         return properties
 
-    def to_flat_properties_dict(self) -> dict[str, Any]:
-        """Converts to a dictionary of GeoJSON Feature with flattened properties.
+    def to_dict(self, flatten_properties: bool = False) -> dict[str, Any]:
+        """Converts to a dictionary of GeoJSON Feature.
+
+        Args:
+            flatten_properties: If True, the properties are flattened using
+                [`flatten_properties`][gportal.product.Product.flatten_properties].
 
         Returns:
-            A dictionary of GeoJSON Feature with flattened properties.
+            This product as a dictionary.
         """
-        return {
-            **self.geojson,
-            "properties": self.flatten_properties(),
-        }
+        if flatten_properties:
+            return {
+                **self.geojson,
+                "properties": self.flatten_properties(),
+            }
+        else:
+            return self.geojson
