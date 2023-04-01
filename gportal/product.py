@@ -7,21 +7,14 @@ class Product:
     """Wrapper of a product GeoJSON in search results.
 
     You can access the `properties` or `properties.gpp` values by `[]` operator like a dictionary.
-
-    Attributes:
-        geojson: Original dictionary that represents a GeoJSON Feature.
     """
 
     def __init__(self, geojson: dict[str, Any]):
-        self.geojson: dict[str, Any] = geojson
+        self._geojson: dict[str, Any] = geojson
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:
-        """Same as `geojson` attribute.
-
-        https://gist.github.com/sgillies/2217756
-        """
-        return self.geojson
+        return self._geojson
 
     def __repr__(self) -> str:
         if self.id is None:
@@ -32,12 +25,12 @@ class Product:
     @property
     def geometry(self) -> dict[str, Any]:
         """GeoJSON geometry."""
-        return self.geojson.get("geometry", {})
+        return self._geojson.get("geometry", {})
 
     @property
     def properties(self) -> dict[str, Any]:
         """GeoJSON properties."""
-        return self.geojson.get("properties", {})
+        return self._geojson.get("properties", {})
 
     def __getitem__(self, key: str) -> Any:
         if key in self.properties:
@@ -160,8 +153,8 @@ class Product:
         """
         if flatten_properties:
             return {
-                **self.geojson,
+                **self._geojson,
                 "properties": self.flatten_properties(),
             }
         else:
-            return self.geojson
+            return self._geojson
