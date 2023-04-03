@@ -28,10 +28,18 @@ class TestProduct:
                     ],
                     "gpp": {
                         "datasetId": "12345678",
+                        "hasProduct": "true",
                     },
+                    "empty": "",
                 },
-            }
+            },
+            convert_types=True,
         )
+
+    def test_convert_type(self, product):
+        assert product["datasetId"] == 12345678
+        assert product["hasProduct"] is True
+        assert product["empty"] is None
 
     def test_geometry(self, product):
         assert product.geometry == {
@@ -42,23 +50,17 @@ class TestProduct:
     def test_id(self, product):
         assert product.id == "GRANULE_ID"
 
-    def test_dataset_id(self, product):
-        assert product.dataset_id == "12345678"
-
-    def test_start_time(self, product):
-        assert product.start_time.isoformat() == "2023-03-25T00:00:00+00:00"
-
-    def test_end_time(self, product):
-        assert product.end_time.isoformat() == "2023-03-25T23:59:50+00:00"
-
     def test_data_url(self, product):
         assert product.data_url == "https://gportal.jaxa.jp/download/path/to/GRANULE_ID.h5"
 
     def test_data_path(self, product):
         assert product.data_path == "path/to/GRANULE_ID.h5"
 
-    def test_get_browse_url(self, product):
-        assert product.get_browse_url() == "https://gportal.jaxa.jp/gpr/img/br/GRANULE_ID.png"
+    def test_quicklook_url(self, product):
+        assert product.quicklook_url == "https://gportal.jaxa.jp/gpr/img/br/GRANULE_ID.png"
+
+    def test_get_as_datetime(self, product):
+        assert product.get_as_datetime("beginPosition").isoformat() == "2023-03-25T00:00:00+00:00"
 
     def test_flatten_properties(self, product):
         flat_properties = product.flatten_properties()
@@ -68,6 +70,8 @@ class TestProduct:
             "beginPosition": "2023-03-25T00:00:00Z",
             "endPosition": "2023-03-25T23:59:50Z",
             "productFileName": "https://gportal.jaxa.jp/download/path/to/GRANULE_ID.h5",
-            "browse-br": "https://gportal.jaxa.jp/gpr/img/br/GRANULE_ID.png",
-            "datasetId": "12345678",
+            "quicklook": "https://gportal.jaxa.jp/gpr/img/br/GRANULE_ID.png",
+            "datasetId": 12345678,
+            "hasProduct": True,
+            "empty": None,
         }

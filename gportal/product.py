@@ -1,4 +1,4 @@
-import re
+import sys
 from datetime import datetime
 from typing import Any, Optional
 
@@ -9,18 +9,45 @@ class Product:
     You can access the `properties` or `properties.gpp` values by `[]` operator like a dictionary.
     """
 
-    def __init__(self, geojson: dict[str, Any]):
-        self._geojson: dict[str, Any] = geojson
+    VALUE_CONVERSION_MAP = {
+        "": None,
+        "true": True,
+        "false": False,
+    }
 
-    @property
-    def __geo_interface__(self) -> dict[str, Any]:
-        return self._geojson
+    def __init__(self, geojson: dict[str, Any], convert_types: bool = False):
+        if convert_types and "properties" in geojson:
+            geojson = {**geojson, "properties": self._convert_type(geojson["properties"])}
+
+        self._geojson = geojson
+
+    @classmethod
+    def _convert_type(cls, val: Any) -> Any:
+        if isinstance(val, str):
+            if val in cls.VALUE_CONVERSION_MAP:
+                return cls.VALUE_CONVERSION_MAP[val]
+            try:
+                return int(val)
+            except ValueError:
+                pass
+            try:
+                return float(val)
+            except ValueError:
+                pass
+        elif isinstance(val, dict):
+            return {key: cls._convert_type(val) for key, val in val.items()}
+
+        return val
 
     def __repr__(self) -> str:
         if self.id is None:
             return super().__repr__()
         else:
             return f"<gportal.Product id={self.id}>"
+
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        return self._geojson
 
     @property
     def geometry(self) -> dict[str, Any]:
@@ -53,23 +80,6 @@ class Product:
         return self.get("identifier")
 
     @property
-    def dataset_id(self) -> Optional[str]:
-        """Dataset ID belonging to."""
-        return self.get("datasetId")
-
-    @property
-    def start_time(self) -> datetime:
-        """Observation start time."""
-        isoformat = re.sub(r"Z$", "+00:00", self["beginPosition"])  # For Python 3.10 or former
-        return datetime.fromisoformat(isoformat)
-
-    @property
-    def end_time(self) -> datetime:
-        """Observation end time."""
-        isoformat = re.sub(r"Z$", "+00:00", self["endPosition"])  # For Python 3.10 or former
-        return datetime.fromisoformat(isoformat)
-
-    @property
     def data_url(self) -> Optional[str]:
         """URL of the product file."""
         return self.get("product", {}).get("fileName")
@@ -82,30 +92,25 @@ class Product:
 
         return self.data_url.replace("https://gportal.jaxa.jp/download/", "", 1)
 
-    def get_browse_url(self, type: str = "browse") -> Optional[str]:
-        """URL of the browse image.
-
-        Args:
-            type: Type of the image. Basically, "browse", "sub-browse" or "thumbnail".
-
-        Returns:
-            The URL of the browse image.
-        """
-        items = self.get("browse")
-        if items is None:
-            return None
-
-        type = {
-            "thumbnail": "thm",
-            "browse": "br",
-            "sub-browse": "sb",
-        }.get(type, type)
-
-        for item in items:
-            if f"/img/{type}" in item["fileName"]:
-                return item["fileName"]
+    @property
+    def quicklook_url(self) -> Optional[str]:
+        """Quicklook image URL."""
+        for item in self.get("browse", []):
+            if item.get("type", "").lower() == "quicklook":
+                return item.get("fileName")
 
         return None
+
+    def get_as_datetime(self, key: str) -> Optional[datetime]:
+        """Gets a value as a datetime object."""
+        val = self.get(key)
+        if val is None:
+            return None
+
+        if sys.version_info < (3, 11):
+            val = val.replace("Z", "+00:00")
+
+        return datetime.fromisoformat(val)
 
     def flatten_properties(self) -> dict[str, Any]:
         """Flattens the nested properties.
@@ -113,7 +118,7 @@ class Product:
         This method processes nested properties from the following keys:
 
         - `product`: Each key is prefixed with `product` (e.g. `product.fileName` => `productFileName`).
-        - `browse`: Keys are the image type (e.g. browse-br, browse-thm), and their values are `fileName`.
+        - `browse`: Keys are the `type` fields (e.g. quicklook, thumbnail), and their values are `fileName` fields.
         - `gpp`: Keys and values are directly merged.
 
         Returns:
@@ -128,10 +133,13 @@ class Product:
             del properties["product"]
 
         if "browse" in properties and isinstance(properties["browse"], list):
-            for browse in properties["browse"]:
-                match = re.search(r"\/img\/([\w]+)\/", browse.get("fileName", ""))
-                if match:
-                    properties[f"browse-{match.group(1)}"] = browse["fileName"]
+            for i, browse in enumerate(properties["browse"]):
+                if "type" in browse and "fileName" in browse:
+                    type = browse["type"].lower()
+                    if type in properties:
+                        properties[f"{type}{i}"] = browse["fileName"]
+                    else:
+                        properties[type] = browse["fileName"]
 
             del properties["browse"]
 

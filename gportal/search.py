@@ -86,15 +86,18 @@ class Search:
         response = self._request({"count": 0})
         return response.get("properties", {}).get("numberOfRecordsMatched")
 
-    def products(self) -> Iterator[Product]:
+    def products(self, convert_types: bool = True) -> Iterator[Product]:
         """Yields products matched the query.
+
+        Args:
+            convert_types: Whether to convert string values in properties into int, float, bool, or None.
 
         Yields:
             A [Product][gportal.product.Product] instance.
         """
         for page in self.pages():
             for product_dict in page.get("features", []):
-                yield Product(product_dict)
+                yield Product(product_dict, convert_types=convert_types)
 
     def pages(self) -> Iterator[dict[str, Any]]:
         """Iterates a search request with pagination.
