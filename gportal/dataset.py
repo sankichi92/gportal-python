@@ -22,26 +22,26 @@ def datasets() -> Datasets:
     Returns:
         The dictionary of the dataset tree, where the leaves are dataset IDs.
     """
-
-    def build_datasets(tree: list[dict[str, Any]], root: bool = True) -> dict[str, Any]:
-        datasets = {}
-
-        for node in tree:
-            if root:
-                title = re.sub(r"<img[^>]*>", "", node["title"]).rstrip()
-            else:
-                title = node["title"]
-
-            children = node.get("children")
-            if children:
-                datasets[title] = build_datasets(children, root=False)
-            else:
-                datasets[title] = node["dataset"].split(",")
-
-        return datasets
-
     raw_tree = http_client.get("/gpr/search/service/satsensor.json")
-    return build_datasets(raw_tree)
+    return _build_datasets(raw_tree)
+
+
+def _build_datasets(tree: list[dict[str, Any]], root: bool = True) -> dict[str, Any]:
+    datasets = {}
+
+    for node in tree:
+        if root:
+            title = re.sub(r"<img[^>]*>", "", node["title"]).rstrip()
+        else:
+            title = node["title"]
+
+        children = node.get("children")
+        if children:
+            datasets[title] = _build_datasets(children, root=False)
+        else:
+            datasets[title] = node["dataset"].split(",")
+
+    return datasets
 
 
 @cache
