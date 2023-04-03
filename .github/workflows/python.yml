@@ -35,11 +35,8 @@ jobs:
       - name: Lint with black
         run: poetry run black --check --diff .
 
-      - name: Lint with isort
-        run: poetry run isort --check --diff .
-
-      - name: Lint with flake8
-        run: poetry run flake8 --count --show-source
+      - name: Lint with ruff
+        run: poetry run ruff check --format=github .
 
       - name: Type check with mypy
         run: poetry run mypy .
