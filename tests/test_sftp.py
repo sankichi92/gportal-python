@@ -57,11 +57,12 @@ class TestSFTP:
         target = ["/GCOM-C/file1.h5", "/GCOM-C/file2.h5"]
 
         # When
-        sftp.download(target, local_dir="/downloads")
+        downloaded = sftp.download(target, local_dir="/downloads")
 
         # Then
         paramiko_client.get.assert_any_call(target[0], "/downloads/file1.h5")
         paramiko_client.get.assert_any_call(target[1], "/downloads/file2.h5")
+        assert downloaded == ["/downloads/file1.h5", "/downloads/file2.h5"]
 
     def test_download_product(self, sftp, paramiko_client):
         # Given
@@ -70,7 +71,8 @@ class TestSFTP:
         )
 
         # When
-        sftp.download(target, local_dir="/downloads")
+        downloaded = sftp.download(target, local_dir="/downloads")
 
         # Then
         paramiko_client.get.assert_called_once_with(target.data_path, "/downloads/file.h5")
+        assert downloaded == ["/downloads/file.h5"]

@@ -16,7 +16,7 @@ def download(
     local_dir: str = ".",
     username: Optional[str] = None,
     password: Optional[str] = None,
-) -> None:
+) -> list[str]:
     """Downloads files to a local directory via SFTP.
 
     Args:
@@ -24,9 +24,12 @@ def download(
         local_dir: Local directory to download to.
         username: G-Portal username. If not provided, the value of `gportal.username` is used.
         password: G-Portal password. If not provided, the value of `gportal.password` is used.
+
+    Returns:
+        A list of local paths of the downloaded files.
     """
     with SFTP.connect(username, password) as sftp:
-        sftp.download(target, local_dir)
+        return sftp.download(target, local_dir)
 
 
 class SFTP:
@@ -102,12 +105,15 @@ class SFTP:
         else:
             return entries
 
-    def download(self, target: Union[str, Product, Iterable[Union[str, Product]]], local_dir: str) -> None:
+    def download(self, target: Union[str, Product, Iterable[Union[str, Product]]], local_dir: str) -> list[str]:
         """Downloads files to a local directory.
 
         Args:
             target: Remote path, Product object, or a list of them.
             local_dir: Local directory to download to.
+
+        Returns:
+            A list of local paths of the downloaded files.
 
         Raises:
             ValueError: If the given product has no URL to download.
@@ -119,6 +125,7 @@ class SFTP:
         else:
             targets = [target]
 
+        downloaded = []
         for target in targets:
             if isinstance(target, Product):
                 if target.data_path is None:
@@ -126,7 +133,11 @@ class SFTP:
 
                 target = target.data_path
 
-            self.client.get(target, os.path.join(local_dir, os.path.basename(target)))
+            local_path = os.path.join(local_dir, os.path.basename(target))
+            self.client.get(target, local_path)
+            downloaded.append(local_path)
+
+        return downloaded
 
     def _reset_cwd(self) -> None:
         self.client.chdir()
