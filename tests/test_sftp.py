@@ -75,4 +75,4 @@ class TestSFTP:
 
         # Then
         paramiko_client.get.assert_called_once_with(target.data_path, "/downloads/file.h5")
-        assert downloaded == ["/downloads/file.h5"]
+        assert downloaded == "/downloads/file.h5"

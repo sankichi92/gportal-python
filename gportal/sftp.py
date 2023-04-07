@@ -105,7 +105,9 @@ class SFTP:
         else:
             return entries
 
-    def download(self, target: Union[str, Product, Iterable[Union[str, Product]]], local_dir: str) -> list[str]:
+    def download(
+        self, target: Union[str, Product, Iterable[Union[str, Product]]], local_dir: str
+    ) -> Union[str, list[str]]:
         """Downloads files to a local directory.
 
         Args:
@@ -113,31 +115,29 @@ class SFTP:
             local_dir: Local directory to download to.
 
         Returns:
-            A list of local paths of the downloaded files.
+            If `target` is a single path or Product object, returns the local path of the downloaded file.
+            If `target` is a list of paths or Product objects, returns a list of local paths of the downloaded files.
 
         Raises:
             ValueError: If the given product has no URL to download.
         """
         self._reset_cwd()
 
-        if isinstance(target, Iterable):
-            targets = target
+        if isinstance(target, Iterable) and not isinstance(target, str):
+            return [self._download_single(t, local_dir) for t in target]
         else:
-            targets = [target]
+            return self._download_single(target, local_dir)
 
-        downloaded = []
-        for target in targets:
-            if isinstance(target, Product):
-                if target.data_path is None:
-                    raise ValueError(f"Product {target.id} has no URL to download")
+    def _download_single(self, target: Union[str, Product], local_dir: str) -> str:
+        if isinstance(target, Product):
+            if target.data_path is None:
+                raise ValueError(f"Product {target.id} has no URL to download")
 
-                target = target.data_path
+            target = target.data_path
 
-            local_path = os.path.join(local_dir, os.path.basename(target))
-            self.client.get(target, local_path)
-            downloaded.append(local_path)
-
-        return downloaded
+        local_path = os.path.join(local_dir, os.path.basename(target))
+        self.client.get(target, local_path)
+        return local_path
 
     def _reset_cwd(self) -> None:
         self.client.chdir()
