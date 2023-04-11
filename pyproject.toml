@@ -3,7 +3,7 @@ requires-python = ">=3.9"
 
 [tool.poetry]
 name = "gportal"
-version = "0.2.0"
+version = "0.3.0"
 description = "Client for JAXA G-Portal Catalogue Service and SFTP"
 authors = ["Takahiro Miyoshi <takahiro-miyoshi@sankichi.net>"]
 license = "MIT"
