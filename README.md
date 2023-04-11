@@ -46,6 +46,11 @@ gportal.download(products, local_dir="path/to/download/dir")
 
 https://gportal.readthedocs.io/
 
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/sankichi92/gportal-python.
+This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/sankichi92/gportal-python/blob/main/CODE_OF_CONDUCT.md).
+
 ## Development
 
 This project uses [Poetry](https://python-poetry.org/).
