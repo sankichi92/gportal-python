@@ -18,7 +18,7 @@ class TestGCOMCFile:
             )
         return path
 
-    def test_convert_to_geotiff(self, eqr_file_path, tmp_path):
+    def test_save_as_geotiff(self, eqr_file_path, tmp_path):
         # Given
         file = GCOMCFile.open(eqr_file_path)
 
