@@ -19,6 +19,7 @@ nav:
       - search: api/search.md
       - product: api/product.md
       - sftp: api/sftp.md
+      - file: api/file.md
 
 theme:
   name: material
@@ -53,6 +54,7 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
             - https://docs.paramiko.org/en/3.1/objects.inv
+            - https://docs.h5py.org/en/3.8.0/objects.inv
           options:
             heading_level: 1
             show_root_heading: true

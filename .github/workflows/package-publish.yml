@@ -20,7 +20,7 @@ jobs:
         run: pipx install poetry
 
       - name: Install dependencies
-        run: poetry install --without dev,notebook,docs
+        run: poetry install --all-extras --without dev,notebook,docs
 
       - name: Check the cached datasets is up-to-date
         run: poetry run python -c "import sys; from gportal import *; print('OK') if datasets() == cached_datasets() else sys.exit(1)"
