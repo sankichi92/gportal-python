@@ -57,7 +57,7 @@ This project uses [Poetry](https://python-poetry.org/).
 
 ### Install dependencies
 
-    $ poetry install --all-extras
+    $ poetry install
 
 ### Run the test suite
 
