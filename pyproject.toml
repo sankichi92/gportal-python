@@ -1,5 +1,9 @@
 [project]
-requires-python = ">=3.9"
+requires-python = "~=3.9"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "gportal"
@@ -49,10 +53,6 @@ mkdocstrings = {extras = ["python"], version = "^0.20.0"}
 mkdocs-material = "^9.1.4"
 mkdocs-jupyter = "^0.24.1"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
 [tool.black]
 line-length = 120
 
@@ -61,3 +61,6 @@ line-length = 120
 
 [tool.pyright]
 reportUnnecessaryTypeIgnoreComment = true
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
