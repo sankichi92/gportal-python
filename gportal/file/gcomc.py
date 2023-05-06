@@ -101,27 +101,27 @@ class GCOMCFile:
         crs, transform = self._build_crs_and_transform()
 
         output_paths = []
-        for dataset in datasets:
+        for dataset_name in datasets:
             file_name = self.attrs["Product_file_name"][0].decode()
-            output_path = Path(output_dir) / f"{Path(file_name).stem}-{dataset}.tif"
+            output_path = Path(output_dir) / f"{Path(file_name).stem}-{dataset_name}.tif"
             output_paths.append(str(output_path))
 
-            data: h5py.Dataset = self.datasets[dataset]  # type: ignore
+            dataset: h5py.Dataset = self.datasets[dataset_name]  # type: ignore
             with rasterio.open(
                 output_path,
                 mode="w",
                 driver="GTiff",
-                height=data.shape[0],
-                width=data.shape[1],
+                height=dataset.shape[0],
+                width=dataset.shape[1],
                 count=1,
-                dtype=data.dtype,
+                dtype=dataset.dtype,
                 crs=crs,
                 transform=transform,
-                nodata=data.attrs["Error_DN"][0],  # type: ignore
+                nodata=dataset.attrs["Error_DN"][0],  # type: ignore
             ) as dst:
-                dst.offsets = (data.attrs["Offset"][0],)  # type: ignore
-                dst.scales = (data.attrs["Slope"][0],)  # type: ignore
-                dst.write(data, 1)
+                dst.offsets = (dataset.attrs["Offset"][0],)  # type: ignore
+                dst.scales = (dataset.attrs["Slope"][0],)  # type: ignore
+                dst.write(dataset, 1)
 
         return output_paths
 
