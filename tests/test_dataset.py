@@ -20,7 +20,7 @@ def test_datasets():
     res = datasets()
 
     # Then
-    assert res["GCOM-C/SGLI"]["L1A-Visible & Near Infrared, VNR"] == ["10001000"]
+    assert res["GCOM-C/SGLI"]["L1A-Visible & Near Infrared, VNR"] == ["10001000"]  # type: ignore
 
 
 def test_cached_datasets():

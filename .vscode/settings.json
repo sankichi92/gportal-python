@@ -1,5 +1,6 @@
 {
+  "python.analysis.importFormat": "relative",
+  "python.analysis.typeCheckingMode": "basic",
   "python.formatting.provider": "black",
-  "python.linting.mypyEnabled": true,
   "python.testing.pytestEnabled": true
 }

@@ -16,7 +16,7 @@ def download(
     local_dir: str = ".",
     username: Optional[str] = None,
     password: Optional[str] = None,
-) -> list[str]:
+) -> Union[str, list[str]]:
     """Downloads files to a local directory via SFTP.
 
     Args:
@@ -45,10 +45,10 @@ class SFTP:
     def __init__(self, sftp_client: SFTPClient):
         self.client: SFTPClient = sftp_client
 
-    def __enter__(self):  # type: ignore[no-untyped-def]
+    def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):  # type: ignore[no-untyped-def]
+    def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
     @classmethod

@@ -3,6 +3,8 @@ from typing import Any, Optional
 
 import h5py
 import rasterio
+import rasterio.crs
+import rasterio.transform
 
 
 class GCOMCFile:
@@ -57,10 +59,10 @@ class GCOMCFile:
         """Closes the file."""
         self.h5_file.close()
 
-    def __enter__(self):  # type: ignore[no-untyped-def]
+    def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):  # type: ignore[no-untyped-def]
+    def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
     @property
@@ -76,7 +78,7 @@ class GCOMCFile:
     @property
     def datasets(self) -> h5py.Group:
         """Dataset group."""
-        return self.h5_file["Image_data"]
+        return self.h5_file["Image_data"]  # type: ignore
 
     @property
     def dataset_names(self) -> list[str]:
@@ -104,7 +106,7 @@ class GCOMCFile:
             output_path = Path(output_dir) / f"{Path(file_name).stem}-{dataset}.tif"
             output_paths.append(str(output_path))
 
-            data = self.datasets[dataset]
+            data: h5py.Dataset = self.datasets[dataset]  # type: ignore
             with rasterio.open(
                 output_path,
                 mode="w",
@@ -115,10 +117,10 @@ class GCOMCFile:
                 dtype=data.dtype,
                 crs=crs,
                 transform=transform,
-                nodata=data.attrs["Error_DN"][0],
+                nodata=data.attrs["Error_DN"][0],  # type: ignore
             ) as dst:
-                dst.offsets = (data.attrs["Offset"][0],)
-                dst.scales = (data.attrs["Slope"][0],)
+                dst.offsets = (data.attrs["Offset"][0],)  # type: ignore
+                dst.scales = (data.attrs["Slope"][0],)  # type: ignore
                 dst.write(data, 1)
 
         return output_paths

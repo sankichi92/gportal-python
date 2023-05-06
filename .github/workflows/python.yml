@@ -38,8 +38,8 @@ jobs:
       - name: Lint with ruff
         run: poetry run ruff check --format=github .
 
-      - name: Type check with mypy
-        run: poetry run mypy .
+      - name: Type check with pyright
+        run: poetry run pyright
 
       - name: Test with pytest
         run: poetry run pytest
