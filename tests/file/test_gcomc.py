@@ -8,7 +8,7 @@ from gportal.file import GCOMCFile
 
 class TestGCOMCFile:
     @pytest.fixture
-    def eqr_file_path(self):
+    def l3_sst_eqr(self):
         filename = "GC1SG1_20230101D01M_D0000_3MSG_SST_F_3000.h5"
         path = Path(__file__).parent / f"fixture/{filename}"
         if not path.exists():
@@ -18,9 +18,20 @@ class TestGCOMCFile:
             )
         return path
 
-    def test_save_as_geotiff(self, eqr_file_path, tmp_path):
+    @pytest.fixture
+    def l2_rsrf_eqa(self):
+        filename = "GC1SG1_20230501D01D_T0529_L2SG_RSRFQ_3002.h5"
+        path = Path(__file__).parent / f"fixture/{filename}"
+        if not path.exists():
+            urlretrieve(
+                f"ftp://sankichi92:anonymous@ftp.gportal.jaxa.jp/standard/GCOM-C/GCOM-C.SGLI/L2.LAND.RSRF/3/2023/05/01/{filename}",
+                path,
+            )
+        return path
+
+    def test_save_as_geotiff(self, l3_sst_eqr, tmp_path):
         # Given
-        file = GCOMCFile.open(eqr_file_path)
+        file = GCOMCFile.open(l3_sst_eqr)
 
         # When
         output_paths = file.save_as_geotiff(output_dir=tmp_path)
@@ -29,3 +40,15 @@ class TestGCOMCFile:
         # Then
         for path in output_paths:
             assert Path(path).exists()
+
+    def test_save_as_multiband_geotiff(self, l2_rsrf_eqa, tmp_path):
+        # Given
+        file = GCOMCFile.open(l2_rsrf_eqa)
+
+        # When
+        output_path = tmp_path / f"{file.granule_id}.tif"
+        file.save_as_multiband_geotiff(bands=["Rs_VN08", "Rs_VN05", "Rs_VN03"], output_path=output_path)
+        file.close()
+
+        # Then
+        assert Path(output_path).exists()

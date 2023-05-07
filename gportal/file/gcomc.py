@@ -1,14 +1,16 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional, Union
 
 import h5py
+import numpy as np
 import rasterio
 import rasterio.crs
 import rasterio.transform
+import rasterio.warp
 
 
 class GCOMCFileError(Exception):
-    """Raised when a GCOM-C HDF5 file is invalid."""
+    """Raised when a HDF5 file is unexpected format."""
 
     pass
 
@@ -25,20 +27,35 @@ class GCOMCFile:
 
     @classmethod
     def convert_to_geotiff(
-        cls, input_path: str, output_dir: str = ".", target_image_data: Optional[list[str]] = None
+        cls, input_path: str, output_dir: str = ".", targets: Optional[list[str]] = None
     ) -> list[str]:
         """Converts a GCOM-C HDF5 file to GeoTIFF files.
 
         Args:
             input_path: Path to a GCOM-C HDF5 file.
             output_dir: Directory to save the GeoTIFF files.
-            target_image_data: Image data names to convert. If not provided, all image data are converted.
+            targets: Image data names to convert.
 
         Returns:
-            A list of paths to the converted GeoTIFF files.
+            List of paths to the converted GeoTIFF files.
         """
         with cls.open(input_path) as gcomc_file:
-            return gcomc_file.save_as_geotiff(output_dir, target_image_data=target_image_data)
+            return gcomc_file.save_as_geotiff(output_dir, targets=targets)
+
+    @classmethod
+    def convert_to_multiband_geotiff(cls, input_path: str, bands: list[str], output_path: Optional[str] = None) -> str:
+        """Converts a GCOM-C HDF5 file to a multiband GeoTIFF file.
+
+        Args:
+            input_path: Path to a GCOM-C HDF5 file.
+            bands: List of image data names for each band.
+            output_path: Path to save the GeoTIFF file.
+
+        Returns:
+            Path to the converted GeoTIFF file.
+        """
+        with cls.open(input_path) as gcomc_file:
+            return gcomc_file.save_as_multiband_geotiff(bands=bands, output_path=output_path)
 
     @classmethod
     def open(cls, path: str) -> "GCOMCFile":
@@ -72,60 +89,57 @@ class GCOMCFile:
         self.close()
 
     @property
-    def attrs(self) -> dict[str, Any]:
+    def attrs(self) -> dict[str, str]:
         """Global attributes."""
-        return {k: v for k, v in self.h5_file["Global_attributes"].attrs.items()}
+        return {k: v[0].decode() for k, v in self.h5_file["Global_attributes"].attrs.items()}
 
     @property
-    def geometry_attrs(self) -> dict[str, Any]:
+    def granule_id(self) -> str:
+        """Granule ID."""
+        return Path(self.attrs["Product_file_name"]).stem
+
+    @property
+    def geometry_attrs(self) -> dict[str, Union[int, float, str]]:
         """Geometry data attributes."""
-        return {k: v for k, v in self.h5_file["Geometry_data"].attrs.items()}
+        return {
+            k: v[0].decode() if isinstance(v[0], bytes) else v[0]
+            for k, v in self.h5_file["Geometry_data"].attrs.items()
+        }
 
     @property
-    def image_data(self) -> h5py.Group:
-        """Image data group."""
+    def image_data(self) -> dict[str, h5py.Dataset]:
         image_data = self.h5_file["Image_data"]
 
         if not isinstance(image_data, h5py.Group):
             raise GCOMCFileError(f"Image_data is not a group: {type(image_data)}")
 
-        return image_data
+        return {k: v for k, v in image_data.items()}
 
-    @property
-    def image_data_keys(self) -> list[str]:
-        """Image data names."""
-        return list(self.image_data.keys())
-
-    def save_as_geotiff(self, output_dir: str = ".", target_image_data: Optional[list[str]] = None) -> list[str]:
+    def save_as_geotiff(self, output_dir: str = ".", targets: Optional[list[str]] = None) -> list[str]:
         """Saves the file as GeoTIFF.
 
         Args:
             output_dir: Directory to save the GeoTIFF files.
-            target_image_data: Image data names to save. If not provided, all image data are saved.
+            targets: Image data names to save. If not provided, all image data are saved.
 
         Returns:
             List of paths to the saved GeoTIFF files.
         """
-        if target_image_data is None:
-            target_image_data = self.image_data_keys
+        if targets is None:
+            targets = [k for k in self.image_data.keys()]
 
         crs, transform = self._build_crs_and_transform()
 
         output_paths = []
-        for image_data_name in target_image_data:
-            file_name = self.attrs["Product_file_name"][0].decode()
-            output_path = Path(output_dir) / f"{Path(file_name).stem}-{image_data_name}.tif"
+        for image_data_name in targets:
+            output_path = Path(output_dir) / f"{self.granule_id}-{image_data_name}.tif"
             output_paths.append(str(output_path))
 
             dataset = self.image_data[image_data_name]
-            if not isinstance(dataset, h5py.Dataset):
-                raise GCOMCFileError(f"Image_data/{image_data_name} is not a dataset.")
 
-            raw_error_dn = dataset.attrs["Error_DN"]
-            if not isinstance(raw_error_dn, h5py.Empty):
-                error_dn = raw_error_dn[0]
-            else:
-                error_dn = None
+            error_dn = dataset.attrs.get("Error_DN")
+            if isinstance(error_dn, np.ndarray):
+                error_dn = error_dn[0]
 
             with rasterio.open(
                 output_path,
@@ -139,32 +153,124 @@ class GCOMCFile:
                 transform=transform,
                 nodata=error_dn,
             ) as dst:
-                raw_offset = dataset.attrs["Offset"]
-                if not isinstance(raw_offset, h5py.Empty):
-                    dst.offsets = (raw_offset[0],)
+                offset = dataset.attrs.get("Offset")
+                if isinstance(offset, np.ndarray):
+                    dst.offsets = (offset[0],)
 
-                raw_slope = dataset.attrs["Slope"]
-                if not isinstance(raw_slope, h5py.Empty):
-                    dst.scales = (raw_slope[0],)
+                slope = dataset.attrs.get("Slope")
+                if isinstance(slope, np.ndarray):
+                    dst.scales = (slope[0],)
 
                 dst.write(dataset, 1)
 
         return output_paths
 
-    def _build_crs_and_transform(self) -> tuple[rasterio.crs.CRS, rasterio.transform.Affine]:
-        geometry_attrs = self.geometry_attrs
-        projection = geometry_attrs["Image_projection"][0].decode()
+    def save_as_multiband_geotiff(
+        self,
+        bands: list[str],
+        output_path: Optional[Union[str, Path]] = None,
+        nodata: Optional[Union[int, float]] = None,
+    ) -> str:
+        """Saves the file as a multiband GeoTIFF.
 
-        if projection == "Equal Rectangular projection":
+        Args:
+            bands: List of image data names for each band.
+            output_path: Path to save the GeoTIFF file.
+            nodata: Nodata value.
+
+        Returns:
+            Path to the saved GeoTIFF file.
+        """
+        count = len(bands)
+        datasets = [self.image_data[band] for band in bands]
+
+        shape = datasets[0].shape
+        for dataset in datasets[1:]:
+            if dataset.shape != shape:
+                raise ValueError("All bands must have the same shape.")
+
+        if output_path is None:
+            output_path = Path.cwd() / f"{self.granule_id}.tif"
+
+        if nodata is None:
+            # Set `nodata` if all bands have the same "Error_DN" values.
+            error_dn_candidates = np.unique(np.array([dataset.attrs.get("Error_DN") for dataset in datasets]))
+            if len(error_dn_candidates) == 1:
+                nodata = error_dn_candidates[0]
+
+        crs, transform = self._build_crs_and_transform()
+
+        dtype = np.find_common_type([dataset.dtype for dataset in datasets], [])
+
+        with rasterio.open(
+            output_path,
+            mode="w",
+            driver="GTiff",
+            height=shape[0],
+            width=shape[1],
+            count=count,
+            dtype=dtype,
+            crs=crs,
+            transform=transform,
+            nodata=nodata,
+        ) as dst:
+            offsets = [0.0] * count
+            scales = [1.0] * count
+
+            for i, dataset in enumerate(datasets):
+                offset = dataset.attrs.get("Offset")
+                if isinstance(offset, np.ndarray):
+                    offsets[i] = offset[0]
+
+                slope = dataset.attrs.get("Slope")
+                if isinstance(slope, np.ndarray):
+                    scales[i] = slope[0]
+
+                dst.write(dataset, i + 1)
+
+            dst.offsets = offsets
+            dst.scales = scales
+
+        return str(output_path)
+
+    def _build_crs_and_transform(self) -> tuple[rasterio.crs.CRS, rasterio.transform.Affine]:
+        # https://shikisai.jaxa.jp/faq/faq0062.html?006
+
+        geometry_attrs = self.geometry_attrs
+        projection = self.geometry_attrs["Image_projection"]
+
+        if projection == "EQA (sinusoidal equal area) projection from 0-deg longitude":
+            crs = rasterio.CRS.from_authority("ESRI", 53008)
+
+            (west, east), (north, south) = rasterio.warp.transform(  # type: ignore
+                src_crs=rasterio.CRS.from_epsg(4326),
+                dst_crs=crs,
+                xs=[geometry_attrs["Upper_left_longitude"], geometry_attrs["Lower_right_longitude"]],
+                ys=[geometry_attrs["Upper_left_latitude"], geometry_attrs["Lower_right_latitude"]],
+            )
+
+            transform = rasterio.transform.from_bounds(
+                west=west,
+                south=south,
+                east=east,
+                north=north,
+                width=geometry_attrs["Number_of_pixels"],
+                height=geometry_attrs["Number_of_lines"],
+            )
+
+            return crs, transform
+
+        elif projection == "Equal Rectangular projection":
             crs = rasterio.CRS.from_epsg(4326)
             transform = rasterio.transform.from_bounds(
-                west=geometry_attrs["Lower_left_longitude"][0],
-                south=geometry_attrs["Lower_left_latitude"][0],
-                east=geometry_attrs["Upper_right_longitude"][0],
-                north=geometry_attrs["Upper_right_latitude"][0],
-                width=geometry_attrs["Number_of_pixels"][0],
-                height=geometry_attrs["Number_of_lines"][0],
+                west=geometry_attrs["Upper_left_longitude"],
+                south=geometry_attrs["Lower_right_latitude"],
+                east=geometry_attrs["Lower_right_longitude"],
+                north=geometry_attrs["Upper_left_latitude"],
+                width=geometry_attrs["Number_of_pixels"],
+                height=geometry_attrs["Number_of_lines"],
             )
             return crs, transform
+
         else:
             raise NotImplementedError(f"Projection {projection} is not supported.")
