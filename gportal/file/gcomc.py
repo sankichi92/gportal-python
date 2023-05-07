@@ -7,6 +7,12 @@ import rasterio.crs
 import rasterio.transform
 
 
+class GCOMCFileError(Exception):
+    """Raised when a GCOM-C HDF5 file is invalid."""
+
+    pass
+
+
 class GCOMCFile:
     """GCOM-C HDF5 file reader.
 
@@ -19,20 +25,20 @@ class GCOMCFile:
 
     @classmethod
     def convert_to_geotiff(
-        cls, input_path: str, output_dir: str = ".", datasets: Optional[list[str]] = None
+        cls, input_path: str, output_dir: str = ".", target_image_data: Optional[list[str]] = None
     ) -> list[str]:
         """Converts a GCOM-C HDF5 file to GeoTIFF files.
 
         Args:
             input_path: Path to a GCOM-C HDF5 file.
             output_dir: Directory to save the GeoTIFF files.
-            datasets: Dataset names to convert. If not provided, all datasets are converted.
+            target_image_data: Image data names to convert. If not provided, all image data are converted.
 
         Returns:
             A list of paths to the converted GeoTIFF files.
         """
         with cls.open(input_path) as gcomc_file:
-            return gcomc_file.save_as_geotiff(output_dir, datasets=datasets)
+            return gcomc_file.save_as_geotiff(output_dir, target_image_data=target_image_data)
 
     @classmethod
     def open(cls, path: str) -> "GCOMCFile":
@@ -76,37 +82,51 @@ class GCOMCFile:
         return {k: v for k, v in self.h5_file["Geometry_data"].attrs.items()}
 
     @property
-    def datasets(self) -> h5py.Group:
-        """Dataset group."""
-        return self.h5_file["Image_data"]  # type: ignore
+    def image_data(self) -> h5py.Group:
+        """Image data group."""
+        image_data = self.h5_file["Image_data"]
+
+        if not isinstance(image_data, h5py.Group):
+            raise GCOMCFileError(f"Image_data is not a group: {type(image_data)}")
+
+        return image_data
 
     @property
-    def dataset_names(self) -> list[str]:
-        """Dataset names."""
-        return list(self.datasets.keys())
+    def image_data_keys(self) -> list[str]:
+        """Image data names."""
+        return list(self.image_data.keys())
 
-    def save_as_geotiff(self, output_dir: str = ".", datasets: Optional[list[str]] = None) -> list[str]:
+    def save_as_geotiff(self, output_dir: str = ".", target_image_data: Optional[list[str]] = None) -> list[str]:
         """Saves the file as GeoTIFF.
 
         Args:
             output_dir: Directory to save the GeoTIFF files.
-            datasets: Dataset names to save. If not provided, all datasets are saved.
+            target_image_data: Image data names to save. If not provided, all image data are saved.
 
         Returns:
             List of paths to the saved GeoTIFF files.
         """
-        if datasets is None:
-            datasets = self.dataset_names
+        if target_image_data is None:
+            target_image_data = self.image_data_keys
 
         crs, transform = self._build_crs_and_transform()
 
         output_paths = []
-        for dataset_name in datasets:
+        for image_data_name in target_image_data:
             file_name = self.attrs["Product_file_name"][0].decode()
-            output_path = Path(output_dir) / f"{Path(file_name).stem}-{dataset_name}.tif"
+            output_path = Path(output_dir) / f"{Path(file_name).stem}-{image_data_name}.tif"
             output_paths.append(str(output_path))
 
-            dataset: h5py.Dataset = self.datasets[dataset_name]  # type: ignore
+            dataset = self.image_data[image_data_name]
+            if not isinstance(dataset, h5py.Dataset):
+                raise GCOMCFileError(f"Image_data/{image_data_name} is not a dataset.")
+
+            raw_error_dn = dataset.attrs["Error_DN"]
+            if not isinstance(raw_error_dn, h5py.Empty):
+                error_dn = raw_error_dn[0]
+            else:
+                error_dn = None
+
             with rasterio.open(
                 output_path,
                 mode="w",
@@ -117,10 +137,16 @@ class GCOMCFile:
                 dtype=dataset.dtype,
                 crs=crs,
                 transform=transform,
-                nodata=dataset.attrs["Error_DN"][0],  # type: ignore
+                nodata=error_dn,
             ) as dst:
-                dst.offsets = (dataset.attrs["Offset"][0],)  # type: ignore
-                dst.scales = (dataset.attrs["Slope"][0],)  # type: ignore
+                raw_offset = dataset.attrs["Offset"]
+                if not isinstance(raw_offset, h5py.Empty):
+                    dst.offsets = (raw_offset[0],)
+
+                raw_slope = dataset.attrs["Slope"]
+                if not isinstance(raw_slope, h5py.Empty):
+                    dst.scales = (raw_slope[0],)
+
                 dst.write(dataset, 1)
 
         return output_paths
