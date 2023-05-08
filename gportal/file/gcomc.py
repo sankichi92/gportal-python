@@ -89,14 +89,17 @@ class GCOMCFile:
         self.close()
 
     @property
-    def attrs(self) -> dict[str, str]:
+    def attrs(self) -> dict[str, Union[int, float, str]]:
         """Global attributes."""
-        return {k: v[0].decode() for k, v in self.h5_file["Global_attributes"].attrs.items()}
+        return {
+            k: v[0].decode() if isinstance(v[0], bytes) else v[0]
+            for k, v in self.h5_file["Global_attributes"].attrs.items()
+        }
 
     @property
     def granule_id(self) -> str:
         """Granule ID."""
-        return Path(self.attrs["Product_file_name"]).stem
+        return Path(str(self.attrs["Product_file_name"])).stem
 
     @property
     def geometry_attrs(self) -> dict[str, Union[int, float, str]]:
