@@ -4,6 +4,7 @@ from typing import Optional, Union
 import h5py
 import numpy as np
 import rasterio
+import rasterio.control
 import rasterio.crs
 import rasterio.transform
 import rasterio.warp
@@ -110,6 +111,16 @@ class GCOMCFile:
         }
 
     @property
+    def geometry_data(self) -> dict[str, h5py.Dataset]:
+        """Geometry data."""
+        geometry_data = self.h5_file["Geometry_data"]
+
+        if not isinstance(geometry_data, h5py.Group):
+            raise GCOMCFileError(f"Geometry_data is not a group: {type(geometry_data)}")
+
+        return {k: v for k, v in geometry_data.items()}
+
+    @property
     def image_data(self) -> dict[str, h5py.Dataset]:
         image_data = self.h5_file["Image_data"]
 
@@ -131,25 +142,28 @@ class GCOMCFile:
         if targets is None:
             targets = [k for k in self.image_data.keys()]
 
-        crs, transform = self._build_crs_and_transform()
-
         output_paths = []
         for image_data_name in targets:
+            dataset = self.image_data[image_data_name]
+            if dataset.ndim != 2:
+                # Skip not 2D data, like Line_tai93.
+                continue
+
             output_path = Path(output_dir) / f"{self.granule_id}-{image_data_name}.tif"
             output_paths.append(str(output_path))
-
-            dataset = self.image_data[image_data_name]
 
             error_dn = dataset.attrs.get("Error_DN")
             if isinstance(error_dn, np.ndarray):
                 error_dn = error_dn[0]
 
+            crs, transform = self._build_crs_and_transform(dataset.shape)
+
             with rasterio.open(
                 output_path,
                 mode="w",
                 driver="GTiff",
-                height=dataset.shape[0],
                 width=dataset.shape[1],
+                height=dataset.shape[0],
                 count=1,
                 dtype=dataset.dtype,
                 crs=crs,
@@ -201,7 +215,7 @@ class GCOMCFile:
             if len(error_dn_candidates) == 1:
                 nodata = error_dn_candidates[0]
 
-        crs, transform = self._build_crs_and_transform()
+        crs, transform = self._build_crs_and_transform(shape)
 
         dtype = np.find_common_type([dataset.dtype for dataset in datasets], [])
 
@@ -209,8 +223,8 @@ class GCOMCFile:
             output_path,
             mode="w",
             driver="GTiff",
-            height=shape[0],
             width=shape[1],
+            height=shape[0],
             count=count,
             dtype=dtype,
             crs=crs,
@@ -236,13 +250,36 @@ class GCOMCFile:
 
         return str(output_path)
 
-    def _build_crs_and_transform(self) -> tuple[rasterio.crs.CRS, rasterio.transform.Affine]:
+    def _build_crs_and_transform(self, shape: tuple[int, int]) -> tuple[rasterio.crs.CRS, rasterio.transform.Affine]:
         # https://shikisai.jaxa.jp/faq/faq0062.html?006
 
         geometry_attrs = self.geometry_attrs
         projection = self.geometry_attrs["Image_projection"]
 
-        if projection == "EQA (sinusoidal equal area) projection from 0-deg longitude":
+        if projection == "L1B reference grid":
+            crs = rasterio.CRS.from_epsg(4326)
+
+            lat = self.geometry_data["Latitude"]
+            lon = self.geometry_data["Longitude"]
+
+            row_interval = shape[0] / (lat.shape[0] - 1)
+            col_interval = shape[1] / (lat.shape[1] - 1)
+
+            gcps = [
+                rasterio.control.GroundControlPoint(
+                    row=index[0] * row_interval,
+                    col=index[1] * col_interval,
+                    x=lon[index],
+                    y=lat[index],
+                )
+                for index in np.ndindex(lat.shape)
+            ]
+
+            transform = rasterio.transform.from_gcps(gcps)
+
+            return crs, transform
+
+        elif projection == "EQA (sinusoidal equal area) projection from 0-deg longitude":
             crs = rasterio.CRS.from_authority("ESRI", 53008)
 
             (west, east), (north, south) = rasterio.warp.transform(  # type: ignore
@@ -257,8 +294,8 @@ class GCOMCFile:
                 south=south,
                 east=east,
                 north=north,
-                width=geometry_attrs["Number_of_pixels"],
-                height=geometry_attrs["Number_of_lines"],
+                width=shape[1],
+                height=shape[0],
             )
 
             return crs, transform
@@ -270,8 +307,8 @@ class GCOMCFile:
                 south=geometry_attrs["Lower_right_latitude"],
                 east=geometry_attrs["Lower_right_longitude"],
                 north=geometry_attrs["Upper_left_latitude"],
-                width=geometry_attrs["Number_of_pixels"],
-                height=geometry_attrs["Number_of_lines"],
+                width=shape[1],
+                height=shape[0],
             )
             return crs, transform
 
