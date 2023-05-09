@@ -152,33 +152,32 @@ class GCOMCFile:
             output_path = Path(output_dir) / f"{self.granule_id}-{image_data_name}.tif"
             output_paths.append(str(output_path))
 
-            error_dn = dataset.attrs.get("Error_DN")
-            if isinstance(error_dn, np.ndarray):
-                error_dn = error_dn[0]
+            raw_error_dn = dataset.attrs.get("Error_DN")
+            error_dn = raw_error_dn[0] if isinstance(raw_error_dn, np.ndarray) else None
 
-            crs, transform = self._build_crs_and_transform(dataset.shape)
+            raw_offset = dataset.attrs.get("Offset")
+            offset = raw_offset[0] if isinstance(raw_offset, np.ndarray) else 0
+
+            raw_slope = dataset.attrs.get("Slope")
+            slope = raw_slope[0] if isinstance(raw_slope, np.ndarray) else 1
+
+            arr, crs, transform = self._build_crs_and_transform(dataset)
 
             with rasterio.open(
                 output_path,
                 mode="w",
                 driver="GTiff",
-                width=dataset.shape[1],
-                height=dataset.shape[0],
+                width=arr.shape[1],
+                height=arr.shape[0],
                 count=1,
-                dtype=dataset.dtype,
+                dtype=arr.dtype,
                 crs=crs,
                 transform=transform,
                 nodata=error_dn,
             ) as dst:
-                offset = dataset.attrs.get("Offset")
-                if isinstance(offset, np.ndarray):
-                    dst.offsets = (offset[0],)
-
-                slope = dataset.attrs.get("Slope")
-                if isinstance(slope, np.ndarray):
-                    dst.scales = (slope[0],)
-
-                dst.write(dataset, 1)
+                dst.offsets = (offset,)
+                dst.scales = (slope,)
+                dst.write(arr, 1)
 
         return output_paths
 
@@ -186,84 +185,74 @@ class GCOMCFile:
         self,
         bands: list[str],
         output_path: Optional[Union[str, Path]] = None,
-        nodata: Optional[Union[int, float]] = None,
     ) -> str:
         """Saves the file as a multiband GeoTIFF.
 
         Args:
             bands: List of image data names for each band.
             output_path: Path to save the GeoTIFF file.
-            nodata: Nodata value.
 
         Returns:
             Path to the saved GeoTIFF file.
         """
-        count = len(bands)
         datasets = [self.image_data[band] for band in bands]
-
-        shape = datasets[0].shape
-        for dataset in datasets[1:]:
-            if dataset.shape != shape:
-                raise ValueError("All bands must have the same shape.")
 
         if output_path is None:
             output_path = Path.cwd() / f"{self.granule_id}.tif"
 
-        if nodata is None:
-            # Set `nodata` if all bands have the same "Error_DN" values.
-            error_dn_candidates = np.unique(np.array([dataset.attrs.get("Error_DN") for dataset in datasets]))
-            if len(error_dn_candidates) == 1:
-                nodata = error_dn_candidates[0]
+        error_dns = []
+        offsets = []
+        scales = []
+        data = []
+        crs = None
+        transform = None
+        for i, dataset in enumerate(datasets):
+            raw_error_dn = dataset.attrs.get("Error_DN")
+            error_dns.append(raw_error_dn[0] if isinstance(raw_error_dn, np.ndarray) else None)
 
-        crs, transform = self._build_crs_and_transform(shape)
+            raw_offset = dataset.attrs.get("Offset")
+            offsets.append(raw_offset[0] if isinstance(raw_offset, np.ndarray) else 0)
 
-        dtype = np.find_common_type([dataset.dtype for dataset in datasets], [])
+            raw_slope = dataset.attrs.get("Slope")
+            scales.append(raw_slope[0] if isinstance(raw_slope, np.ndarray) else 1)
+
+            arr, crs, transform = self._build_crs_and_transform(dataset)
+            data.append(arr)
 
         with rasterio.open(
             output_path,
             mode="w",
             driver="GTiff",
-            width=shape[1],
-            height=shape[0],
-            count=count,
-            dtype=dtype,
+            width=data[0].shape[1],
+            height=data[0].shape[0],
+            count=len(data),
+            dtype=np.find_common_type([arr.dtype for arr in data], []),
             crs=crs,
             transform=transform,
-            nodata=nodata,
+            nodata=error_dns[0] if len(np.unique(error_dns)) == 1 else None,
         ) as dst:
-            offsets = [0.0] * count
-            scales = [1.0] * count
-
-            for i, dataset in enumerate(datasets):
-                offset = dataset.attrs.get("Offset")
-                if isinstance(offset, np.ndarray):
-                    offsets[i] = offset[0]
-
-                slope = dataset.attrs.get("Slope")
-                if isinstance(slope, np.ndarray):
-                    scales[i] = slope[0]
-
-                dst.write(dataset, i + 1)
-
             dst.offsets = offsets
             dst.scales = scales
 
+            for i, arr in enumerate(data, start=1):
+                dst.write(arr, i)
+
         return str(output_path)
 
-    def _build_crs_and_transform(self, shape: tuple[int, int]) -> tuple[rasterio.crs.CRS, rasterio.transform.Affine]:
+    def _build_crs_and_transform(
+        self, dataset: h5py.Dataset
+    ) -> tuple[Union[np.ndarray, h5py.Dataset], rasterio.crs.CRS, rasterio.transform.Affine]:
         # https://shikisai.jaxa.jp/faq/faq0062.html?006
 
         geometry_attrs = self.geometry_attrs
         projection = self.geometry_attrs["Image_projection"]
 
-        if projection == "L1B reference grid":
-            crs = rasterio.CRS.from_epsg(4326)
-
+        if projection == "L1B reference grid":  # FIXME: 経度方向の投影がおかしい？
             lat = self.geometry_data["Latitude"]
             lon = self.geometry_data["Longitude"]
 
-            row_interval = shape[0] / (lat.shape[0] - 1)
-            col_interval = shape[1] / (lat.shape[1] - 1)
+            row_interval = dataset.shape[0] / (lat.shape[0] - 1)
+            col_interval = dataset.shape[1] / (lat.shape[1] - 1)
 
             gcps = [
                 rasterio.control.GroundControlPoint(
@@ -275,9 +264,15 @@ class GCOMCFile:
                 for index in np.ndindex(lat.shape)
             ]
 
-            transform = rasterio.transform.from_gcps(gcps)
+            raw_error_dn = dataset.attrs.get("Error_DN")
+            error_dn = raw_error_dn[0] if isinstance(raw_error_dn, np.ndarray) else None
 
-            return crs, transform
+            crs = rasterio.CRS.from_epsg(4326)
+            arr, transform = rasterio.warp.reproject(
+                np.array(dataset), gcps=gcps, src_crs=crs, dst_crs=crs, src_nodata=error_dn, dst_nodata=error_dn
+            )
+
+            return arr[0], crs, transform
 
         elif projection == "EQA (sinusoidal equal area) projection from 0-deg longitude":
             crs = rasterio.CRS.from_authority("ESRI", 53008)
@@ -294,11 +289,11 @@ class GCOMCFile:
                 south=south,
                 east=east,
                 north=north,
-                width=shape[1],
-                height=shape[0],
+                width=dataset.shape[1],
+                height=dataset.shape[0],
             )
 
-            return crs, transform
+            return dataset, crs, transform
 
         elif projection == "Equal Rectangular projection":
             crs = rasterio.CRS.from_epsg(4326)
@@ -307,10 +302,10 @@ class GCOMCFile:
                 south=geometry_attrs["Lower_right_latitude"],
                 east=geometry_attrs["Lower_right_longitude"],
                 north=geometry_attrs["Upper_left_latitude"],
-                width=shape[1],
-                height=shape[0],
+                width=dataset.shape[1],
+                height=dataset.shape[0],
             )
-            return crs, transform
+            return dataset, crs, transform
 
         else:
             raise NotImplementedError(f"Projection {projection} is not supported.")
