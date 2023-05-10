@@ -161,23 +161,27 @@ class GCOMCFile:
             raw_slope = dataset.attrs.get("Slope")
             slope = raw_slope[0] if isinstance(raw_slope, np.ndarray) else 1
 
-            arr, crs, transform = self._build_crs_and_transform(dataset)
+            crs, transform, gcps = self._build_projection(dataset.shape)
 
             with rasterio.open(
                 output_path,
                 mode="w",
                 driver="GTiff",
-                width=arr.shape[1],
-                height=arr.shape[0],
+                width=dataset.shape[1],
+                height=dataset.shape[0],
                 count=1,
-                dtype=arr.dtype,
+                dtype=dataset.dtype,
                 crs=crs,
                 transform=transform,
                 nodata=error_dn,
             ) as dst:
                 dst.offsets = (offset,)
                 dst.scales = (slope,)
-                dst.write(arr, 1)
+
+                if gcps is not None:
+                    dst.gcps = (gcps, crs)
+
+                dst.write(dataset, 1)
 
         return output_paths
 
@@ -197,16 +201,24 @@ class GCOMCFile:
         """
         datasets = [self.image_data[band] for band in bands]
 
+        shape = datasets[0].shape
+        for dataset in datasets[1:]:
+            if dataset.shape != shape:
+                raise ValueError("All bands must have the same shape.")
+
         if output_path is None:
             output_path = Path.cwd() / f"{self.granule_id}.tif"
 
+        dtypes = []
         error_dns = []
         offsets = []
         scales = []
-        data = []
         crs = None
         transform = None
+        gcps = None
         for i, dataset in enumerate(datasets):
+            dtypes.append(dataset.dtype)
+
             raw_error_dn = dataset.attrs.get("Error_DN")
             error_dns.append(raw_error_dn[0] if isinstance(raw_error_dn, np.ndarray) else None)
 
@@ -216,17 +228,16 @@ class GCOMCFile:
             raw_slope = dataset.attrs.get("Slope")
             scales.append(raw_slope[0] if isinstance(raw_slope, np.ndarray) else 1)
 
-            arr, crs, transform = self._build_crs_and_transform(dataset)
-            data.append(arr)
+            crs, transform, gcps = self._build_projection(dataset.shape)
 
         with rasterio.open(
             output_path,
             mode="w",
             driver="GTiff",
-            width=data[0].shape[1],
-            height=data[0].shape[0],
-            count=len(data),
-            dtype=np.find_common_type([arr.dtype for arr in data], []),
+            width=shape[1],
+            height=shape[0],
+            count=len(datasets),
+            dtype=np.find_common_type(dtypes, []),
             crs=crs,
             transform=transform,
             nodata=error_dns[0] if len(np.unique(error_dns)) == 1 else None,
@@ -234,14 +245,19 @@ class GCOMCFile:
             dst.offsets = offsets
             dst.scales = scales
 
-            for i, arr in enumerate(data, start=1):
-                dst.write(arr, i)
+            if gcps is not None:
+                dst.gcps = (crs, gcps)
+
+            for i, dataset in enumerate(datasets, start=1):
+                dst.write(dataset, i)
 
         return str(output_path)
 
-    def _build_crs_and_transform(
-        self, dataset: h5py.Dataset
-    ) -> tuple[Union[np.ndarray, h5py.Dataset], rasterio.crs.CRS, rasterio.transform.Affine]:
+    def _build_projection(
+        self, shape: tuple[int, int]
+    ) -> tuple[
+        rasterio.crs.CRS, Optional[rasterio.transform.Affine], Optional[list[rasterio.control.GroundControlPoint]]
+    ]:
         # https://shikisai.jaxa.jp/faq/faq0062.html?006
 
         geometry_attrs = self.geometry_attrs
@@ -251,8 +267,8 @@ class GCOMCFile:
             lat = self.geometry_data["Latitude"]
             lon = self.geometry_data["Longitude"]
 
-            row_interval = dataset.shape[0] / (lat.shape[0] - 1)
-            col_interval = dataset.shape[1] / (lat.shape[1] - 1)
+            row_interval = shape[0] / (lat.shape[0] - 1)
+            col_interval = shape[1] / (lat.shape[1] - 1)
 
             gcps = [
                 rasterio.control.GroundControlPoint(
@@ -262,17 +278,13 @@ class GCOMCFile:
                     y=lat[index],
                 )
                 for index in np.ndindex(lat.shape)
+                # Reduce the points to avoid the error: `TIFFFetchNormalTag:Incorrect count for "GeoTiePoints"`
+                if index[0] % 10 == 0 and index[1] % 10 == 0
             ]
 
-            raw_error_dn = dataset.attrs.get("Error_DN")
-            error_dn = raw_error_dn[0] if isinstance(raw_error_dn, np.ndarray) else None
-
             crs = rasterio.CRS.from_epsg(4326)
-            arr, transform = rasterio.warp.reproject(
-                np.array(dataset), gcps=gcps, src_crs=crs, dst_crs=crs, src_nodata=error_dn, dst_nodata=error_dn
-            )
 
-            return arr[0], crs, transform
+            return crs, None, gcps
 
         elif projection == "EQA (sinusoidal equal area) projection from 0-deg longitude":
             crs = rasterio.CRS.from_authority("ESRI", 53008)
@@ -289,11 +301,11 @@ class GCOMCFile:
                 south=south,
                 east=east,
                 north=north,
-                width=dataset.shape[1],
-                height=dataset.shape[0],
+                width=shape[1],
+                height=shape[0],
             )
 
-            return dataset, crs, transform
+            return crs, transform, None
 
         elif projection == "Equal Rectangular projection":
             crs = rasterio.CRS.from_epsg(4326)
@@ -302,10 +314,10 @@ class GCOMCFile:
                 south=geometry_attrs["Lower_right_latitude"],
                 east=geometry_attrs["Lower_right_longitude"],
                 north=geometry_attrs["Upper_left_latitude"],
-                width=dataset.shape[1],
-                height=dataset.shape[0],
+                width=shape[1],
+                height=shape[0],
             )
-            return dataset, crs, transform
+            return crs, transform, None
 
         else:
             raise NotImplementedError(f"Projection {projection} is not supported.")
