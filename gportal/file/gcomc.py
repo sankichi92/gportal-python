@@ -27,38 +27,6 @@ class GCOMCFile:
         self.h5_file: h5py.File = h5_file
 
     @classmethod
-    def convert_to_geotiff(
-        cls, input_path: str, output_dir: str = ".", targets: Optional[list[str]] = None
-    ) -> list[str]:
-        """Converts a GCOM-C HDF5 file to GeoTIFF files.
-
-        Args:
-            input_path: Path to a GCOM-C HDF5 file.
-            output_dir: Directory to save the GeoTIFF files.
-            targets: Image data names to convert.
-
-        Returns:
-            List of paths to the converted GeoTIFF files.
-        """
-        with cls.open(input_path) as gcomc_file:
-            return gcomc_file.save_as_geotiff(output_dir, targets=targets)
-
-    @classmethod
-    def convert_to_multiband_geotiff(cls, input_path: str, bands: list[str], output_path: Optional[str] = None) -> str:
-        """Converts a GCOM-C HDF5 file to a multiband GeoTIFF file.
-
-        Args:
-            input_path: Path to a GCOM-C HDF5 file.
-            bands: List of image data names for each band.
-            output_path: Path to save the GeoTIFF file.
-
-        Returns:
-            Path to the converted GeoTIFF file.
-        """
-        with cls.open(input_path) as gcomc_file:
-            return gcomc_file.save_as_multiband_geotiff(bands=bands, output_path=output_path)
-
-    @classmethod
     def open(cls, path: str) -> "GCOMCFile":
         """Opens a GCOM-C HDF5 file.
 
@@ -122,6 +90,7 @@ class GCOMCFile:
 
     @property
     def image_data(self) -> dict[str, h5py.Dataset]:
+        """Image data."""
         image_data = self.h5_file["Image_data"]
 
         if not isinstance(image_data, h5py.Group):
@@ -129,7 +98,7 @@ class GCOMCFile:
 
         return {k: v for k, v in image_data.items()}
 
-    def save_as_geotiff(self, output_dir: str = ".", targets: Optional[list[str]] = None) -> list[str]:
+    def save_as_geotiff(self, output_dir: str = ".", targets: Optional[list[str]] = None) -> dict[str, str]:
         """Saves the file as GeoTIFF.
 
         Args:
@@ -137,12 +106,12 @@ class GCOMCFile:
             targets: Image data names to save. If not provided, all image data are saved.
 
         Returns:
-            List of paths to the saved GeoTIFF files.
+            Dictionary of image data names and paths to the saved GeoTIFF files.
         """
         if targets is None:
             targets = [k for k in self.image_data.keys()]
 
-        output_paths = []
+        results = {}
         for image_data_name in targets:
             dataset = self.image_data[image_data_name]
             if dataset.ndim != 2:
@@ -150,7 +119,7 @@ class GCOMCFile:
                 continue
 
             output_path = Path(output_dir) / f"{self.granule_id}-{image_data_name}.tif"
-            output_paths.append(str(output_path))
+            results[image_data_name] = str(output_path)
 
             raw_error_dn = dataset.attrs.get("Error_DN")
             error_dn = raw_error_dn[0] if isinstance(raw_error_dn, np.ndarray) else None
@@ -183,7 +152,7 @@ class GCOMCFile:
 
                 dst.write(dataset, 1)
 
-        return output_paths
+        return results
 
     def save_as_multiband_geotiff(
         self,

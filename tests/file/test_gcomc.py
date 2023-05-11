@@ -34,11 +34,11 @@ class TestGCOMCFile:
         file = GCOMCFile.open(l3_sst_eqr)
 
         # When
-        output_paths = file.save_as_geotiff(output_dir=tmp_path)
+        output_path_map = file.save_as_geotiff(output_dir=tmp_path)
         file.close()
 
         # Then
-        for path in output_paths:
+        for _, path in output_path_map.items():
             assert Path(path).exists()
 
     def test_save_as_multiband_geotiff(self, l2_rsrf_eqa, tmp_path):

@@ -38,7 +38,7 @@ def search(
     if dataset_ids:
         params["datasetId"] = ",".join(map(str, dataset_ids))
 
-    if bbox:
+    if bbox is not None:
         params["bbox"] = ",".join(map(str, bbox))
 
     if isinstance(start_time, datetime):

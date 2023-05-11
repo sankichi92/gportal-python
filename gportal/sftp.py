@@ -1,7 +1,7 @@
 import os.path
 import re
 from collections.abc import Iterable
-from typing import Optional, Union
+from typing import Optional, Union, overload
 
 from paramiko.sftp_client import SFTPClient
 from paramiko.transport import Transport
@@ -9,6 +9,26 @@ from paramiko.transport import Transport
 import gportal
 
 from .product import Product
+
+
+@overload
+def download(
+    target: Union[str, Product],
+    local_dir: str = ".",
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> str:
+    ...
+
+
+@overload
+def download(
+    target: Iterable[Union[str, Product]],
+    local_dir: str = ".",
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+) -> list[str]:
+    ...
 
 
 def download(
@@ -26,7 +46,8 @@ def download(
         password: G-Portal password. If not provided, the value of `gportal.password` is used.
 
     Returns:
-        A list of local paths of the downloaded files.
+        A local path of the downloaded file when `target` is a single path or Product object.
+        A list of local paths of the downloaded files when `target` is a list of paths or Product objects.
     """
     with SFTP.connect(username, password) as sftp:
         return sftp.download(target, local_dir)
@@ -105,6 +126,14 @@ class SFTP:
         else:
             return entries
 
+    @overload
+    def download(self, target: Union[str, Product], local_dir: str) -> str:
+        ...
+
+    @overload
+    def download(self, target: Iterable[Union[str, Product]], local_dir: str) -> list[str]:
+        ...
+
     def download(
         self, target: Union[str, Product, Iterable[Union[str, Product]]], local_dir: str
     ) -> Union[str, list[str]]:
@@ -115,11 +144,8 @@ class SFTP:
             local_dir: Local directory to download to.
 
         Returns:
-            If `target` is a single path or Product object, returns the local path of the downloaded file.
-            If `target` is a list of paths or Product objects, returns a list of local paths of the downloaded files.
-
-        Raises:
-            ValueError: If the given product has no URL to download.
+            A local path of the downloaded file when `target` is a single path or Product object.
+            A list of local paths of the downloaded files when `target` is a list of paths or Product objects.
         """
         self._reset_cwd()
 
@@ -134,6 +160,9 @@ class SFTP:
                 raise ValueError(f"Product {target.id} has no URL to download")
 
             target = target.data_path
+
+        elif target.startswith("https://gportal.jaxa.jp/download/"):
+            target = target.replace("https://gportal.jaxa.jp/download/", "", 1)
 
         local_path = os.path.join(local_dir, os.path.basename(target))
         self.client.get(target, local_path)
